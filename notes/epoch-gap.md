@@ -71,7 +71,7 @@ C7 专题：用 mac-arm64.zip 补 3.0.0/3.0.1 缺失的 linux 断点，回答 2.
 
 插件格式为 `.zcode-plugin` 目录（package.json + .mcp.json + commands/hooks/skills/templates），与 2.x `gemini/builtin/skill-creator/`（SKILL.md + init/package/validate .cjs）是同一能力的两代封装。
 
-`model-providers/` 是 3.x 新增的 resources 级工件：`schemaVersion: "zcode.model-providers.v1"`，每 provider 声明 `endpoints.baseURL` + `paths.{anthropic,openai-compatible}` 双 kind + 每模型 modalities/contextWindow/reasoning 档位的声明式目录；zcode.cjs 内 `model-providers` 引用×2 证明由引擎读取。2.13.0 resources 级无此目录（provider 信息编进 zcode-acp 二进制/gemini chunks）。`config/`（3.7.5 起）与 `acp/`+`acp-proxy-runtime/`（3.12.3 有、3.7.5 无）是更晚的再引入，不在断代点。
+`model-providers/` 是 3.x 新增的 resources 级工件：`schemaVersion: "zcode.model-providers.v1"`，每 provider 声明 `endpoints.baseURL` + `paths.{anthropic,openai-compatible}` 双 kind + 每模型 modalities/contextWindow/reasoning 档位的声明式目录；zcode.cjs 内 `model-providers` 引用×2 证明由引擎读取。2.13.0 resources 级无此目录（provider 信息编进 zcode-acp 二进制/gemini chunks）。`config/` 是更晚的再引入（v3.4.2 无、v3.5.2 已有——`git -C repo ls-tree -d` 实测，边界 3.4.2→3.5.2），不在断代点；`acp/`+`acp-proxy-runtime/` 在 3.x 全线未回归（v3.1.0–v3.12.3 `git -C repo ls-tree -r` 对 `acp/` 零命中）。
 
 ## 连续性清单（什么没换）
 
@@ -79,7 +79,7 @@ C7 专题：用 mac-arm64.zip 补 3.0.0/3.0.1 缺失的 linux 断点，回答 2.
 - **app-update.yml**：两版逐字节同构，仅 update url 平台段不同（`update/linux/x64/` vs `update/mac/arm64/`）；provider generic、updaterCacheDirName '@zcodedesktop-updater' 一致。
 - **宿主应用依赖**：`app/package.json` deps 22→25 项，@zcode/{client,rpc,server,services,shared,ui} workspace 全套保留；electron-updater ^6.8.3、node-pty ^1.0.0、@lydell/node-pty-* 1.2.0-beta.10、react/react-dom ^19.2.4、ssh2、undici、ws、yaml、yazl、semver、module-details-from-path、@fiahfy/icns、@larksuiteoapi/node-sdk 不变。增量：@arms/rum-electron（阿里 RUM，替下 @sentry/electron）、@babel/runtime、@zcode/e2e-report、node-forge。
 - **main bundle 指纹**：3.0.0 mac 与 3.1.0 linux 的 out/main chunk 文件名大面积相同（chunk-D6GXJZZB/ORLA5R6F/R7L3MURM/7U5HQJ2V/BYDNK7AA/RHVRFAWL/EC2RJZ5P）——同一代码库跨平台构建。
-- **tools/ripgrep/rg**：三版都在；`tools/{bfs,ugrep}` 直到 3.12.3 才出现（SKILL.md"两代都带 rg/bfs/ugrep"对 3.0.x–3.7.5 不成立）。
+- **tools/ripgrep/rg**：三版都在；`tools/{bfs,ugrep}` 3.6.1 起出现（边界收窄至 3.5.3→3.6.1，见 `notes/runtime.md` 工具表与 win-3.6.1 `.bundle-meta.json`），SKILL.md"两代都带 rg/bfs/ugrep"仅对 3.0.x–3.5.3 不成立。
 - **权限模式**：gemini/policies/*.toml 消失，但 `yolo`×23、`plan`×30 字符串在 zcode.cjs 内——模式概念内化进引擎。
 - **skill-creator**：gemini/builtin/skill-creator → @zcode/skill-creator-plugin 0.1.0。
 - **IPC/RPC**：两代 app deps 都含 @zcode/rpc；out/main 里裸 `ipcMain` 出现次数 2.13.0=1、3.0.0=0——宿主↔渲染走自定义 RPC 层，频道级清单归 C9 lane。
@@ -102,7 +102,7 @@ app.asar 三版几乎等大——腰斩全部来自 resources/ 下引擎载荷�
 - `ElectronAsarIntegrity`（mac Info.plist）= af4f328e…，与 app.asar 文件裸 sha256=2af6596a… 不符；推测 Electron 的完整性哈希按 asar 头/分块算而非整文件，未验证。若成立属正常，不是重打包证据。
 - 2.13.0 默认引擎未证实：五运行时都在盘，out/main 全部有引用；运行时选择逻辑（gemini 兜底还是 zcode-acp 主力）需 C8 读 `chunk-DZG5AG7F.js`/`index.js` 的引擎分发分支确认。
 - SKILL.md"3.0.0 起 OpenCode 派生自研引擎"只被间接证据支持：zcode.cjs 内 opencode 串×18（多为导入/迁移语境）、.node-bundle-meta 源路径 `apps/zcode-cli`。opencode 代码级血缘需 C8 拆 bundle 后比对，本报告不背书"派生"措辞。
-- `acp/`+`acp-proxy-runtime/` 回归点未定位：3.0.x–3.7.5 无、3.12.3 有；中间版本由 A 系 lane 全量提取后可二分。
+- ~~`acp/`+`acp-proxy-runtime/` 回归点未定位~~ 已核实：3.x 全线无——v3.1.0/v3.5.3/v3.7.5/v3.9.1/v3.12.3 `git -C repo ls-tree -r` 对 `acp/` 零命中（含 -acp 命名），两目录从未回归。
 - mac unpacked 无 ssh2/sshcrypto（linux 两版都有）：平台差异还是 3.x mac 把 sshcrypto 收进 asar 未查；不影响主结论。
-- `extracted/3.12.3/app-update.yml` url=http://localhost:8081——疑似 QA 构建混入 CDN 语料，转 A5 audit lane。
+- ~~`extracted/3.12.3/app-update.yml` url=http://localhost:8081 疑似 QA 构建混入~~ 已核实：≥3.3.6 全部 25 版 yml 均为该 stub（切换点 3.3.5→3.3.6，≤3.3.5 为 `cdn.zcode-ai.com` 真 feed），electron-updater generic feed 被置空、真实 feed 改由应用内计算（domestic/overseas CDN + `ZCODE_UPDATE_FEED_URL` 覆盖），非打包事故。
 - tree_manifest.py 的引擎标记漏 `glm/zcode-acp` 二进制形态：2.13.0 MANIFEST engine="gemini+acp+acp-proxy" 未记 glm，建议 A5 补 zcode-acp 判定。
