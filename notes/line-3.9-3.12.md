@@ -83,7 +83,7 @@ Scope: v3.9.1, v3.9.2, v3.10.0, v3.10.1, v3.10.2, v3.11.1, v3.11.2, v3.12.1, v3.
 - **Observability**: OTel deps + renderer action trace @3.10.0 → process-diagnostic limits + ARMS RUM @3.12.2 → `zcode.invalid/local-crash-only` crash-dump pipeline @3.12.2.
 - **Release cadence**: engine `glm/zcode.cjs` frozen on hotfix releases (unchanged at 3.10.1, 3.10.2, 3.11.2, 3.12.3 — sha `35971604`, `35971604`, `e9f1868c`, `da61b066` respectively); engine changes ride feature boundaries. Patch releases in range are either same-day rebuilds (3.11.2, 3.12.3) or tiny targeted fixes (3.10.1, 3.10.2).
 - **Rebuild-churn mechanism**: `buildCommitId`/`buildTime`/version literals in `app/out/main/index.js` + `metadata/build-meta.json` feed vite content-hashes → all-zero signature diffs can still carry 44–4886 file renames. Mask `{8-char hash}.js`, version, commitId, ISO timestamps before comparing.
-- **Signature noise**: `https://github.com/${XX}` template-var rotates every boundary (identifier reshuffle inside template literal — always ignore); minified doc URLs from vendored libs (chevrotain, iconv, sharp, fonts.googleapis, example.com) ride along with whichever chunk embeds them.
+- **Signature noise**: `https://github.com/${XX}` template-var rotates every boundary (identifier reshuffle inside template literal — always ignore); minified doc URLs from vendored libs (chevrotain, iconv, sharp, fonts.googleapis, example.com) ride along with whichever chunk embeds them. Churn 实例：`diffs/3.12.1__3.12.2.md`、`diffs/3.3.4__3.3.5.md`、`diffs/3.5.3__3.6.1.md` endpoints 节。
 
 ## REVIEW
 

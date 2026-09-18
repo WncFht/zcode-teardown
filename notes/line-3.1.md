@@ -59,10 +59,10 @@ Engine swap — `gemini+acp+acp-proxy` → `glm-zcode`. Counts collapse everywhe
 ## Through-lines
 
 - **3.1.0 landed feature-complete, not minimal.** Sessions (fork/rewind/steer/compact/goal), workspace provider registry, plugins, skills (incl. superpowers), remote SSH, web remote control, OAuth+payment, telemetry, billing tiers — all present at first linux drop. The patches were hotfixes and hardening, not missing subsystems.
-- **Patch themes**: .1/.2 = environment correctness (tool-subprocess env passthrough, proxy incl. NO_PROXY, Windows dirs) + small IPC additions (settings sync, open-workspace-path). .3 = business/plumbing (enterprise purchase flow, CDN migration to z.ai, WSL remote prefix, model-change telemetry).
-- **De-Claude-ing continued post-swap**: `claude-code-hint` stripping removed in .1, `opencode.ai/config.json` fetch removed in .3 — vestigial competitor-tool compatibility steadily deleted.
+- **Patch themes**: .1/.2 = environment correctness (tool-subprocess env passthrough, proxy incl. NO_PROXY, Windows dirs) + small IPC additions (settings sync, open-workspace-path). .3 = business/plumbing (enterprise purchase flow, CDN migration to z.ai, WSL remote prefix, model-change telemetry). 证据：`diffs/3.1.0__3.1.1.md` → `diffs/3.1.2__3.1.3.md` 的 env_vars/ipc_channels/endpoints 节（NO_PROXY 落 3.1.1→3.1.2，enterprise/CDN/WSL 同落 3.1.2→3.1.3）。
+- **De-Claude-ing continued post-swap**: `claude-code-hint` stripping removed in .1, `opencode.ai/config.json` fetch removed in .3 — vestigial competitor-tool compatibility steadily deleted. 证据：`diffs/3.1.0__3.1.1.md`、`diffs/3.1.2__3.1.3.md` endpoints 节。
 - **Plugin/provider catalog frozen**: glm/packages (6 plugins) and model-providers (1 catalog file) byte-identical across all four versions (git diff v3.1.0..v3.1.3 -- glm/packages model-providers = empty). Engine churn was entirely in zcode.cjs + host/main chunks.
-- **Two protocol dialects coexist**: engine speaks camelCase ZCode Protocol (session/setModel), host analytics uses snake_case action names (session/set_model). Signature acp_methods conflates them — worth remembering when interpreting counts in later lanes.
+- **Two protocol dialects coexist**: engine speaks camelCase ZCode Protocol (session/setModel), host analytics uses snake_case action names (session/set_model). Signature acp_methods conflates them — worth remembering when interpreting counts in later lanes. 证据：`signatures/3.1.0.json` acp_methods 双语并存、`tmp/lane-c9/rpc-tables.json` 注册表均为 camelCase、`notes/protocol.md` "two protocol eras"。
 
 ## REVIEW
 

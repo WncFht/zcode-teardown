@@ -88,6 +88,8 @@ C7 专题：用 mac-arm64.zip 补 3.0.0/3.0.1 缺失的 linux 断点，回答 2.
 
 ## 包体积
 
+installer 大小为 `installers/` 留存文件实测，提取树大小/文件数为 `du -sb`/`find` 实测（`extracted/2.13.0/`、`extracted-mac/3.0.0/`、`extracted/3.1.0/`），deb Installed-Size 取 `extracted/3.1.0/HOST.json` control 字段，arm64/AppImage 大小取 `releases/3.1.0/latest-linux.yml`。
+
 | 指标               | 2.13.0                       | 3.0.0 mac                  | 3.1.0                                                                    |
 | ------------------ | ---------------------------- | -------------------------- | ------------------------------------------------------------------------ |
 | installer          | 278.6MB（deb x64）           | 140.5MB（zip arm64）       | 113.5MB（deb x64；arm64 deb 107.7MB/AppImage 153.4MB，latest-linux.yml） |
