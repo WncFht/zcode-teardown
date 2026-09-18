@@ -21,9 +21,27 @@ URL=$(sed -n '1p' <<<"$META"); SIZE=$(sed -n '2p' <<<"$META"); SHA_B64=$(sed -n 
 avail=$(df --output=avail -BG "$ROOT" | tail -1 | tr -dc '0-9')
 if [ "$avail" -lt 15 ]; then emit download 0 '{}' "disk gate: ${avail}G free"; exit 2; fi
 
-if ! curl -fL --retry 3 --retry-delay 2 -C - -o "$DEB" "$URL"; then
-  emit download 0 "{\"url\":\"$URL\"}" "curl failed"; exit 1
-fi
+# CDN throttles long-lived connections to ~260KB/s; fresh Range requests stay fast.
+# Download in 24MiB chunks to .part then append; existing file resumes at its size.
+CHUNK=25165824
+have=0; [ -f "$DEB" ] && have=$(stat -c%s "$DEB")
+while [ "$have" -lt "$SIZE" ]; do
+  end=$(( have + CHUNK - 1 )); [ "$end" -ge "$SIZE" ] && end=$(( SIZE - 1 ))
+  want=$(( end - have + 1 ))
+  if ! curl -fsL --retry 2 -r "$have-$end" -o "$DEB.part" "$URL"; then
+    rm -f "$DEB.part"
+    emit download 0 "{\"url\":\"$URL\",\"offset\":$have}" "chunk fetch failed"; exit 1
+  fi
+  got=$(stat -c%s "$DEB.part")
+  if [ "$got" = "$want" ]; then
+    cat "$DEB.part" >> "$DEB"; rm -f "$DEB.part"; have=$(( end + 1 ))
+  elif [ "$have" = "0" ] && [ "$got" = "$SIZE" ]; then
+    mv "$DEB.part" "$DEB"; break  # server ignored Range, sent whole file
+  else
+    rm -f "$DEB.part"
+    emit download 0 "{\"url\":\"$URL\",\"offset\":$have,\"want\":$want,\"got\":$got}" "chunk size mismatch"; exit 1
+  fi
+done
 actual=$(stat -c%s "$DEB")
 if [ "$actual" != "$SIZE" ]; then
   emit verify 0 "{\"size\":$actual,\"expected_size\":$SIZE}" "size mismatch vs manifest"; exit 1
