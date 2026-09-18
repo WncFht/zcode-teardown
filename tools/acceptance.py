@@ -135,13 +135,25 @@ def main():
             if not fn.endswith(".md"):
                 continue
             claims = cited = 0
+            # section-context credit: bullets under a heading/preamble that
+            # itself cites evidence inherit the chain (### a -> b (diffs/..),
+            # "source: extracted/x.y/zcode.cjs" paragraphs); resets per heading
+            section_cited = False
             with open(os.path.join(notes_dir, fn)) as fh:
                 for line in fh:
                     s = line.strip()
+                    if s.startswith("#"):
+                        section_cited = bool(evidence_re.search(s))
+                        continue
+                    if not s:
+                        continue
                     if s.startswith(("- ", "* ", "| ")) and len(s) > 40:
                         claims += 1
-                        if evidence_re.search(s):
+                        if evidence_re.search(s) or section_cited:
                             cited += 1
+                    elif evidence_re.search(s):
+                        # preamble line carrying the section's evidence
+                        section_cited = True
             notes_report[fn] = {
                 "claim_lines": claims,
                 "cited": cited,
@@ -150,7 +162,8 @@ def main():
     report["criteria"]["5_evidence_heuristic"] = {
         "pass": None,
         "notes": notes_report,
-        "note": "heuristic — human review required for uncited claim lines",
+        "note": "heuristic — bullets may inherit section-level citations; "
+        "human review required for uncited claim lines",
     }
 
     print(json.dumps(report, indent=1) if "--json" in sys.argv else "")
