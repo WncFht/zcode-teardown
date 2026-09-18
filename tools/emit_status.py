@@ -3,6 +3,7 @@
 
 usage: emit_status.py <lane> <ver> <stage> <ok:0|1> [counts_json] [error]
 """
+
 import json
 import os
 import sys
