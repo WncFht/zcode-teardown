@@ -1,0 +1,206 @@
+{
+ "2.10.0": {
+  "format": "deb"
+ },
+ "2.11.0": {
+  "format": "deb"
+ },
+ "2.12.0": {
+  "format": "deb"
+ },
+ "2.13.0": {
+  "format": "deb"
+ },
+ "2.2.0": {
+  "format": "deb"
+ },
+ "2.3.0": {
+  "format": "deb"
+ },
+ "2.3.1": {
+  "format": "deb"
+ },
+ "2.4.0": {
+  "format": "deb"
+ },
+ "2.4.1": {
+  "format": "deb"
+ },
+ "2.5.0": {
+  "format": "deb"
+ },
+ "2.6.0": {
+  "format": "deb"
+ },
+ "2.7.0": {
+  "format": "deb"
+ },
+ "2.8.0": {
+  "format": "deb"
+ },
+ "2.9.0": {
+  "format": "deb"
+ },
+ "3.1.0": {
+  "format": "deb"
+ },
+ "3.1.1": {
+  "format": "deb"
+ },
+ "3.1.2": {
+  "format": "deb"
+ },
+ "3.1.3": {
+  "format": "deb"
+ },
+ "3.10.0": {
+  "format": "deb"
+ },
+ "3.10.1": {
+  "format": "deb"
+ },
+ "3.10.2": {
+  "format": "deb"
+ },
+ "3.11.1": {
+  "format": "deb"
+ },
+ "3.11.2": {
+  "format": "deb"
+ },
+ "3.12.1": {
+  "format": "deb"
+ },
+ "3.12.2": {
+  "format": "deb"
+ },
+ "3.12.3": {
+  "format": "deb"
+ },
+ "3.2.0": {
+  "format": "exe",
+  "substitute_for": "linux-x64.deb",
+  "installer": "3.2.0-win-x64.exe",
+  "installer_size": 137993104,
+  "installer_sha256": "e31e24d2a5a2bf0791470c8f87272978e470026169e2060373ab36cb8f4d0224"
+ },
+ "3.2.1": {
+  "format": "dmg",
+  "substitute_for": "linux-x64.deb",
+  "installer": "3.2.1-mac-arm64.dmg",
+  "installer_size": 161368700,
+  "installer_sha256": "1a7c47032174d82d1aca81658f12de3fdcd14cbd389b74d578dca06d7fbe4a01"
+ },
+ "3.2.2": {
+  "format": "deb"
+ },
+ "3.2.3": {
+  "format": "deb"
+ },
+ "3.2.4": {
+  "format": "appimage",
+  "substitute_for": "linux-x64.deb",
+  "installer": "3.2.4-linux-arm64.AppImage",
+  "installer_size": 153729727,
+  "installer_sha256": "ebeb0afdbb5a38507d75b104fa197663db45db998474641f8458acd54b9ef381"
+ },
+ "3.2.5": {
+  "format": "appimage",
+  "substitute_for": "linux-x64.deb"
+ },
+ "3.3.0": {
+  "format": "deb"
+ },
+ "3.3.1": {
+  "format": "appimage",
+  "substitute_for": "linux-x64.deb"
+ },
+ "3.3.2": {
+  "format": "appimage",
+  "substitute_for": "linux-x64.deb",
+  "installer": "3.3.2-linux-arm64.AppImage",
+  "installer_size": 153820633,
+  "installer_sha256": "9763fba420fd170db92a96d9a8965905a8cbc661796c184748ce18cf8bbd79e9"
+ },
+ "3.3.3": {
+  "format": "appimage",
+  "substitute_for": "linux-x64.deb"
+ },
+ "3.3.4": {
+  "format": "appimage",
+  "substitute_for": "linux-x64.deb"
+ },
+ "3.3.5": {
+  "format": "appimage",
+  "substitute_for": "linux-x64.deb"
+ },
+ "3.3.6": {
+  "format": "deb"
+ },
+ "3.4.0": {
+  "format": "exe",
+  "substitute_for": "linux-x64.deb",
+  "installer": "3.4.0-win-x64.exe",
+  "installer_size": 127630304,
+  "installer_sha256": "3f1225023ca9e4a98a69486c8bddb991877c1d170248518275ea0983b58ca0a7"
+ },
+ "3.4.1": {
+  "format": "exe",
+  "substitute_for": "linux-x64.deb",
+  "installer": "3.4.1-win-x64.exe",
+  "installer_size": 127601008,
+  "installer_sha256": "6accf5de08b23d9c10b8f83218b9c6f0f7d1bbbf081abbd25bf3e0d2876418d8"
+ },
+ "3.4.2": {
+  "format": "deb"
+ },
+ "3.5.2": {
+  "format": "deb"
+ },
+ "3.5.3": {
+  "format": "deb"
+ },
+ "3.6.1": {
+  "format": "exe",
+  "substitute_for": "linux-x64.deb",
+  "installer": "3.6.1-win-x64.exe",
+  "installer_size": 147409584,
+  "installer_sha256": "57bc9b7af2bc861344f19c888b6183b8e0ddb5ca327a67502d04a4e39d03f13d"
+ },
+ "3.6.2": {
+  "format": "exe",
+  "substitute_for": "linux-x64.deb",
+  "installer": "3.6.2-win-x64.exe",
+  "installer_size": 147397352,
+  "installer_sha256": "cf156f22f9685c4068e1437e26d1af3257f27a5e5738ec7828ef045509cc397f"
+ },
+ "3.6.4": {
+  "format": "appimage",
+  "substitute_for": "linux-x64.deb"
+ },
+ "3.6.5": {
+  "format": "deb"
+ },
+ "3.7.3": {
+  "format": "appimage",
+  "substitute_for": "linux-x64.deb"
+ },
+ "3.7.5": {
+  "format": "deb"
+ },
+ "3.7.6": {
+  "format": "deb"
+ },
+ "3.7.7": {
+  "format": "deb"
+ },
+ "3.8.1": {
+  "format": "deb"
+ },
+ "3.9.1": {
+  "format": "deb"
+ },
+ "3.9.2": {
+  "format": "deb"
+ }
+}
