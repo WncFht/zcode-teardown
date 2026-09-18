@@ -93,7 +93,12 @@ EXCLUDE_GLOBS = [
 BINARY_DIRS = ["glm", "opencode", "codex", "gemini", "acp", "acp-proxy-runtime"]
 MIN_BINARY_SIZE = 1_000_000  # skip tiny shims
 # scoped packages whose binaries are engine code even inside node_modules
-BINARY_NM_SCOPES = ("@zed-industries", "@agentclientprotocol")
+BINARY_NM_SCOPES = (
+    "@zed-industries",
+    "@agentclientprotocol",
+    "@anthropic-ai",
+    "@openai",
+)
 
 STRINGS_CACHE = os.path.join(ROOT, "tmp", "lane-b1", "strings-cache")
 
