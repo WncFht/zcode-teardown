@@ -7,19 +7,34 @@ LANE="${2:-manual}"
 DEB="$ROOT/installers/$VER.deb"
 OUT="$ROOT/extracted/$VER"
 WORK="$ROOT/tmp/unpack-$VER"
-emit(){ python3 "$ROOT/tools/emit_status.py" "$LANE" "$VER" "$@"; }
-[ -f "$DEB" ] || { emit unpack 0 '{}' "installer missing: $DEB"; exit 1; }
-rm -rf "$WORK" "$OUT"; mkdir -p "$WORK" "$OUT"
+emit() { python3 "$ROOT/tools/emit_status.py" "$LANE" "$VER" "$@"; }
+[ -f "$DEB" ] || {
+  emit unpack 0 '{}' "installer missing: $DEB"
+  exit 1
+}
+rm -rf "$WORK" "$OUT"
+mkdir -p "$WORK" "$OUT"
 (
   cd "$WORK"
   ar x "$DEB"
   ok=0
-  for f in data.tar.*; do [ -e "$f" ] || continue; tar -xf "$f"; ok=1; done
-  [ "$ok" = 1 ] || { echo "no data.tar.* in $DEB" >&2; exit 3; }
+  for f in data.tar.*; do
+    [ -e "$f" ] || continue
+    tar -xf "$f"
+    ok=1
+  done
+  [ "$ok" = 1 ] || {
+    echo "no data.tar.* in $DEB" >&2
+    exit 3
+  }
 )
 SRC="$WORK/opt/ZCode/resources"
 if [ ! -d "$SRC" ]; then SRC="$(find "$WORK" -type d -name resources | head -1)"; fi
-[ -d "$SRC" ] || { emit unpack 0 '{}' "resources dir not found under $WORK"; rm -rf "$WORK"; exit 1; }
+[ -d "$SRC" ] || {
+  emit unpack 0 '{}' "resources dir not found under $WORK"
+  rm -rf "$WORK"
+  exit 1
+}
 
 # host fingerprint before cleanup (binary lives outside resources/, so capture here)
 python3 - "$WORK" "$OUT/HOST.json" <<'PY'
@@ -75,12 +90,21 @@ if [ -f "$OUT/app.asar" ]; then
     emit asar 0 '{}' "$OUT/app already exists, skipping asar extract"
   else
     if command -v asar >/dev/null 2>&1; then
-      asar extract "$OUT/app.asar" "$OUT/app" || { emit asar 0 '{}' "asar extract failed"; rm -rf "$WORK"; exit 1; }
+      asar extract "$OUT/app.asar" "$OUT/app" || {
+        emit asar 0 '{}' "asar extract failed"
+        rm -rf "$WORK"
+        exit 1
+      }
     else
-      npx -y @electron/asar extract "$OUT/app.asar" "$OUT/app" || { emit asar 0 '{}' "npx asar extract failed"; rm -rf "$WORK"; exit 1; }
+      npx -y @electron/asar extract "$OUT/app.asar" "$OUT/app" || {
+        emit asar 0 '{}' "npx asar extract failed"
+        rm -rf "$WORK"
+        exit 1
+      }
     fi
   fi
 fi
-files=$(find "$OUT" -type f | wc -l); bytes=$(du -sb "$OUT" | cut -f1)
+files=$(find "$OUT" -type f | wc -l)
+bytes=$(du -sb "$OUT" | cut -f1)
 emit unpack 1 "{\"files\":$files,\"bytes\":$bytes}"
 rm -rf "$WORK"
