@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # commit_version.sh <version> [lane] — commit extracted/<ver>/ tree into repo/ as tag v<ver>
-# repo/ holds only .git; each commit snapshots the extracted tree via --work-tree (no checkout on disk).
+# repo/ holds only .git (core.bare, no checkout on disk); each commit snapshots the
+# extracted tree via --work-tree. bare suppresses phantom "deleted" status noise.
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 VER="${1:?usage: commit_version.sh <version> [lane]}"
@@ -22,10 +23,11 @@ mkdir -p "$ROOT/tmp" "$REPO"
 exec 9>"$LOCK"
 flock 9
 [ -d "$REPO/.git" ] || git -C "$REPO" init -q
+git -C "$REPO" config core.bare true
 git -C "$REPO" config user.name >/dev/null 2>&1 || git -C "$REPO" config user.name "zcode-rev"
 git -C "$REPO" config user.email >/dev/null 2>&1 || git -C "$REPO" config user.email "rev@localhost"
 git -C "$REPO" --work-tree="$SRC" add -A -f
-GIT_AUTHOR_DATE="$DATE" GIT_COMMITTER_DATE="$DATE" git -C "$REPO" commit -q --allow-empty -m "v$VER"
+GIT_AUTHOR_DATE="$DATE" GIT_COMMITTER_DATE="$DATE" git -C "$REPO" --work-tree="$SRC" commit -q --allow-empty -m "v$VER"
 git -C "$REPO" tag -f "v$VER" >/dev/null
 flock -u 9
 exec 9>&-
