@@ -5,9 +5,17 @@ useDefault = true
 
 # 历史已提交的秘密按精确值放行（regexTarget=line 匹配整行，值不变即豁免）。
 # 只放已经入库的既定事实；新值仍会命中规则。不要用 paths 整文件放行。
-# [allowlist]
-# regexTarget = "line"
-# regexes = ['''password: "EXACT-LEGACY-VALUE"''']
+#
+# signatures/2.x.json 各有 6 条 generic-api-key 命中：厂商随二进制分发的
+# Google Drive resourcekey 分享参数（提取语料的固有噪声，非本仓凭据）。
+# 三个精确值放行；新版本若引入新值仍会触发审查。
+[allowlist]
+regexTarget = "line"
+regexes = [
+  '''resourcekey=0-0adXCXDQEd91ZZW63HbW-Q''',
+  '''resourcekey=0-LtPTzR1woh-rxGtfPzjjfg''',
+  '''resourcekey=0-xEr67SIjXmAXRe1PKy7Jlw''',
+]
 
 # 自有凭据格式：真实值在任意已入库文件都拦，占位符放行。
 # 例：面板账密只应存在于 gitignored 的 xxx.env；example 文件的占位符豁免。
