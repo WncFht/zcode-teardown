@@ -1,0 +1,88 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "$id": "zcode-rev/signature_schema.json",
+ "title": "ZCode version signature snapshot",
+ "type": "object",
+ "required": ["version", "engine", "generated", "counts", "categories"],
+ "properties": {
+  "version": {"type": "string", "description": "version directory name, e.g. 3.12.3"},
+  "engine": {"type": ["string", "null"], "description": "engine tag from MANIFEST.json (gemini+..., glm-zcode, ...)"},
+  "generated": {"type": ["string", "null"], "description": "copied from MANIFEST.json generated for determinism"},
+  "counts": {
+   "type": "object",
+   "description": "per-category item counts",
+   "additionalProperties": {"type": "integer", "minimum": 0}
+  },
+  "categories": {
+   "type": "object",
+   "list_categories": [
+    "models", "endpoints", "feature_flags", "env_vars", "plans",
+    "acp_methods", "ipc_channels", "plugins_skills", "bundled_tools",
+    "native_modules"
+   ],
+   "object_categories": ["engine", "deps"],
+   "properties": {
+    "models": {
+     "type": "array", "items": {"type": "string"}, "uniqueItems": true,
+     "description": "sorted unique modelIds (GLM-*, gemini-*, claude-*, gpt-*, kimi-*, ...) plus provider:<templateId> entries from config/provider/*.json"
+    },
+    "endpoints": {
+     "type": "array", "items": {"type": "string"}, "uniqueItems": true,
+     "description": "absolute https?:// URLs and quoted /api//oauth//vN/... paths; ${var} normalized to {}"
+    },
+    "feature_flags": {
+     "type": "array", "items": {"type": "string"}, "uniqueItems": true,
+     "description": "flag-like identifiers: *Enabled/*Disabled minus generic stems, enable_*/disable_*, FF_*, ZCODE_*, features.*, feature_gate_*"
+    },
+    "env_vars": {
+     "type": "array", "items": {"type": "string"}, "uniqueItems": true,
+     "description": "variable names read via process.env.X / process.env['X'] / getenv('X')"
+    },
+    "plans": {
+     "type": "array", "items": {"type": "string"}, "uniqueItems": true,
+     "description": "tier:<name> plan tiers, plan:<snake> plan ids, provider_cls:<Name> subscription/quota provider classes, quota:<field>=<n> numeric limits, kv:<field>=<value> plan/product ids"
+    },
+    "acp_methods": {
+     "type": "array", "items": {"type": "string"}, "uniqueItems": true,
+     "description": "JSON-RPC/ACP method strings: session/*, fs/*, terminal/*, mcp/*, _claude/*, method: values, acp.* events"
+    },
+    "ipc_channels": {
+     "type": "array", "items": {"type": "string"}, "uniqueItems": true,
+     "description": "Electron IPC channel names from app/out (zcode:* plus other non-junk namespaces)"
+    },
+    "plugins_skills": {
+     "type": "array", "items": {"type": "string"}, "uniqueItems": true,
+     "description": "plugin:<name>@<ver>, plugin:<name>:mcp:<server>, skill:<name>, command:<name>, policy:<name>, bundled_pkg:<name>@<ver>"
+    },
+    "bundled_tools": {
+     "type": "array", "items": {"type": "string"}, "uniqueItems": true,
+     "description": "'<path>: <version-string>' from MANIFEST.json bundled_tools"
+    },
+    "native_modules": {
+     "type": "array", "items": {"type": "string"}, "uniqueItems": true,
+     "description": "'<relpath>#<sha256[:16]>' from MANIFEST.json native_modules"
+    },
+    "engine": {
+     "type": "object",
+     "description": "engine tag, app name/version, app.asar sha256, host binary sha256, host pkg version, components map (dir->name@ver or path->sha256:...), optional electron_hint"
+    },
+    "deps": {
+     "type": "object",
+     "description": "app/package.json dependencies name->version",
+     "additionalProperties": {"type": "string"}
+    }
+   },
+   "additionalProperties": false
+  },
+  "provenance": {
+   "type": "object",
+   "description": "optional: category -> signature -> first source relpath (not part of the diffed surface)",
+   "additionalProperties": {"type": "object", "additionalProperties": {"type": "string"}}
+  },
+  "_perf": {
+   "type": "object",
+   "description": "optional: extraction timing + binary list"
+  }
+ },
+ "additionalProperties": true
+}
