@@ -1,8 +1,8 @@
 {
  "_perf": {
   "binaries": [],
-  "extract_s": 1.84,
-  "strings_s": 0.01
+  "extract_s": 10.94,
+  "strings_s": 0.08
  },
  "categories": {
   "acp_methods": [
@@ -2199,7 +2199,7 @@
    "disable_interaction": "extracted/3.2.0/app/out/renderer/assets/narrat-Cy8di6K9.js",
    "disable_notifications": "extracted/3.2.0/app/out/renderer/assets/narrat-Cy8di6K9.js",
    "disable_parallel_tool_use": "extracted/3.2.0/glm/zcode.cjs",
-   "disable_symlinks": "extracted/3.2.0/app/out/renderer/assets/nginx-Bzow3Lj8.js",
+   "disable_symlinks": "extracted/3.2.0/app/out/renderer/assets/nginx-DjhfnclV.js",
    "dynamicTokensEnabled": "extracted/3.2.0/app/out/renderer/assets/chunk-K5T4RW27-COPdmeCz.js",
    "embeddedSearchBranchEnabled": "extracted/3.2.0/glm/zcode.cjs",
    "embeddedSearchEnabled": "extracted/3.2.0/glm/zcode.cjs",
@@ -2299,14 +2299,14 @@
    "zoomingEnabled": "extracted/3.2.0/app/out/renderer/assets/cytoscape.esm-Bo2j5rFK.js"
   },
   "ipc_channels": {
-   "annotation:dart": "extracted/3.2.0/app/out/renderer/assets/one-dark-pro-DQhIyD5N.js",
+   "annotation:dart": "extracted/3.2.0/app/out/renderer/assets/one-dark-pro-CzixO0bU.js",
    "arms:rum-bridge": "extracted/3.2.0/app/out/preload/index.cjs",
    "bots:task": "extracted/3.2.0/app/out/host/chunk-5N66MPPC.js",
    "bots:task-stream": "extracted/3.2.0/app/out/host/chunk-5N66MPPC.js",
    "class:python": "extracted/3.2.0/app/out/renderer/assets/everforest-dark-BFCtTAaL.js",
    "class:typescript": "extracted/3.2.0/app/out/renderer/assets/everforest-dark-BFCtTAaL.js",
    "class:typescriptreact": "extracted/3.2.0/app/out/renderer/assets/everforest-dark-BFCtTAaL.js",
-   "enc:v1:": "extracted/3.2.0/app/out/main/index.js",
+   "enc:v1:": "extracted/3.2.0/app/out/host/index.js",
    "enum:typescript": "extracted/3.2.0/app/out/renderer/assets/everforest-dark-BFCtTAaL.js",
    "enum:typescriptreact": "extracted/3.2.0/app/out/renderer/assets/everforest-dark-BFCtTAaL.js",
    "env:bigmodel-usage": "extracted/3.2.0/app/out/host/index.js",
@@ -2320,11 +2320,11 @@
    "namespace:typescriptreact": "extracted/3.2.0/app/out/renderer/assets/everforest-dark-BFCtTAaL.js",
    "openai:chat": "extracted/3.2.0/app/out/host/index.js",
    "openai:messages": "extracted/3.2.0/app/out/host/index.js",
-   "property:dart": "extracted/3.2.0/app/out/renderer/assets/one-dark-pro-DQhIyD5N.js",
-   "property:python": "extracted/3.2.0/app/out/renderer/assets/gruvbox-dark-soft-DAAh9Oyr.js",
+   "property:dart": "extracted/3.2.0/app/out/renderer/assets/one-dark-pro-CzixO0bU.js",
+   "property:python": "extracted/3.2.0/app/out/renderer/assets/gruvbox-dark-hard-BpL6ivP3.js",
    "remote:ssh:": "extracted/3.2.0/app/out/host/index.js",
    "remote:wsl:": "extracted/3.2.0/app/out/host/index.js",
-   "variable:dart": "extracted/3.2.0/app/out/renderer/assets/one-dark-pro-DQhIyD5N.js",
+   "variable:dart": "extracted/3.2.0/app/out/renderer/assets/one-dark-pro-CzixO0bU.js",
    "zc:cancel": "extracted/3.2.0/app/out/host/index.js",
    "zc:cmd:": "extracted/3.2.0/app/out/host/index.js",
    "zcode:ack-post-update-release-notes": "extracted/3.2.0/app/out/preload/index.cjs",
@@ -3109,7 +3109,7 @@
    "plan:service_tier": "extracted/3.2.0/glm/zcode.cjs",
    "provider_cls:BigModelCodingPlanSubscriptionProvider": "extracted/3.2.0/app/out/host/index.js",
    "provider_cls:BigModelUsageQuotaProvider": "extracted/3.2.0/app/out/host/index.js",
-   "tier:basic": "extracted/3.2.0/app/out/renderer/assets/r-B1pOEc8q.js",
+   "tier:basic": "extracted/3.2.0/app/out/renderer/assets/r-Dbl2f2dw.js",
    "tier:dev": "extracted/3.2.0/app/out/host/index.js",
    "tier:family": "extracted/3.2.0/glm/zcode.cjs",
    "tier:free": "extracted/3.2.0/glm/zcode.cjs",
