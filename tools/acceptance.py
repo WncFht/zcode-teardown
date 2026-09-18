@@ -27,20 +27,35 @@ def main():
     with open(os.path.join(ROOT, "manifest", "versions.json")) as f:
         manifest = json.load(f)
     versions = sorted((v["version"] for v in manifest), key=ver_key)
-    report = {"total_versions": len(versions), "criteria": {}}
+    prov_path = os.path.join(ROOT, "manifest", "provenance.json")
+    unrecoverable = set()
+    if os.path.isfile(prov_path):
+        with open(prov_path) as pf:
+            prov = json.load(pf)
+        unrecoverable = {
+            v
+            for v, e in prov.items()
+            if e.get("status") == "published-but-unrecoverable"
+        }
+    expected = [v for v in versions if v not in unrecoverable]
+    report = {
+        "total_versions": len(versions),
+        "unrecoverable": sorted(unrecoverable, key=ver_key),
+        "criteria": {},
+    }
     ok_all = True
 
     # 1: extracted trees + MANIFEST.json
-    missing_tree = [v for v in versions if not os.path.isdir(f"{ROOT}/extracted/{v}")]
+    missing_tree = [v for v in expected if not os.path.isdir(f"{ROOT}/extracted/{v}")]
     missing_mf = [
         v
-        for v in versions
+        for v in expected
         if os.path.isdir(f"{ROOT}/extracted/{v}")
         and not os.path.isfile(f"{ROOT}/extracted/{v}/MANIFEST.json")
     ]
     empty = [
         v
-        for v in versions
+        for v in expected
         if os.path.isdir(f"{ROOT}/extracted/{v}")
         and not any(os.scandir(f"{ROOT}/extracted/{v}"))
     ]
@@ -62,8 +77,8 @@ def main():
             check=False,
         ).stdout.split()
     )
-    missing_tag = [v for v in versions if f"v{v}" not in tags]
-    c2 = not missing_tag and len(tags) == len(versions)
+    missing_tag = [v for v in expected if f"v{v}" not in tags]
+    c2 = not missing_tag and len(tags) == len(expected)
     report["criteria"]["2_tags"] = {
         "pass": c2,
         "tag_count": len(tags),
@@ -73,9 +88,9 @@ def main():
 
     # 3: signatures schema-valid (reuse extractor's validator)
     sigs = {f[:-5] for f in os.listdir(f"{ROOT}/signatures") if f.endswith(".json")}
-    missing_sig = [v for v in versions if v not in sigs]
+    missing_sig = [v for v in expected if v not in sigs]
     invalid = []
-    for v in sorted(sigs & set(versions), key=ver_key):
+    for v in sorted(sigs & set(expected), key=ver_key):
         r = subprocess.run(
             [
                 "python3",
@@ -98,10 +113,30 @@ def main():
     }
     ok_all &= c3
 
-    # 4: diffs
+    # 4: diffs — adjacent pairs among recoverable versions, plus a
+    # cross-gap bridge per maximal run of unrecoverable versions
+    # (prev recoverable -> next recoverable)
     diffs_dir = f"{ROOT}/diffs"
     have_diffs = set(os.listdir(diffs_dir)) if os.path.isdir(diffs_dir) else set()
-    want = [f"{a}__{b}.md" for a, b in zip(versions, versions[1:])]
+    want = [f"{a}__{b}.md" for a, b in zip(expected, expected[1:])]
+    impossible = [
+        f"{a}__{b}.md"
+        for a, b in zip(versions, versions[1:])
+        if a in unrecoverable or b in unrecoverable
+    ]
+    bridges = []
+    i = 0
+    while i < len(versions):
+        if versions[i] not in unrecoverable:
+            i += 1
+            continue
+        j = i
+        while j < len(versions) and versions[j] in unrecoverable:
+            j += 1
+        if i > 0 and j < len(versions):
+            bridges.append(f"{versions[i - 1]}__{versions[j]}.md")
+        i = j
+    want += bridges
     missing_diff = [d for d in want if d not in have_diffs]
     c4 = not missing_diff
     report["criteria"]["4_diffs"] = {
@@ -109,6 +144,8 @@ def main():
         "count": len(have_diffs),
         "expected": len(want),
         "missing": missing_diff,
+        "impossible_unrecoverable": impossible,
+        "gap_bridges": bridges,
     }
     ok_all &= c4
 
@@ -181,6 +218,11 @@ def main():
     print(json.dumps(report, indent=1) if "--json" in sys.argv else "")
     if "--json" not in sys.argv:
         print(f"versions: {len(versions)}")
+        if unrecoverable:
+            print(
+                f"unrecoverable (published-then-pulled): "
+                f"{sorted(unrecoverable, key=ver_key)}"
+            )
         for k, c in report["criteria"].items():
             p = c.get("pass")
             mark = "PASS" if p else ("INFO" if p is None else "FAIL")
@@ -192,6 +234,8 @@ def main():
                 "missing",
                 "invalid",
                 "missing_diff",
+                "impossible_unrecoverable",
+                "gap_bridges",
             ):
                 if c.get(key):
                     print(f"       {key}: {c[key]}")

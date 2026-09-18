@@ -181,9 +181,33 @@
  "3.6.5": {
   "format": "deb"
  },
+ "3.7.1": {
+  "format": "deb",
+  "status": "published-but-unrecoverable",
+  "releaseDate": "2026-08-06T14:50:40.268Z",
+  "published_size": 138229952,
+  "published_sha512": "GpjFLxm7otAq/fowe5QY4vemWMlK7SRDgUCcPnbCSHKwyZ9pNoJSCX/8nEmg0IRL9JOljHRW7NdaaHbFSM0ulw==",
+  "recovery_evidence": "published then pulled from CDN: all-platform candidate objects 404 (x-cache HIT cached-negative, OSS NoSuchKey on zcode-release.oss-cn-hongkong); only partial edge-cache 206 ghosts that die mid-flight. 90-min probe sweep 16 URL patterns x all platforms exhausted 2026-09-18 ~21:57 (tmp/recovery/retry2.sh)"
+ },
+ "3.7.2": {
+  "format": "deb",
+  "status": "published-but-unrecoverable",
+  "releaseDate": "2026-08-07T00:53:59.817Z",
+  "published_size": 138229984,
+  "published_sha512": "UfoLazOgByklMVoMXU9GU7eNzEj6Fl169RLVFKhl4LVzVo5OFzyDqnEYoQ1L/z0+E+bqOecXpasthjzhNx2cMQ==",
+  "recovery_evidence": "published then pulled from CDN: all-platform candidate objects 404 (x-cache HIT cached-negative, OSS NoSuchKey on zcode-release.oss-cn-hongkong); only partial edge-cache 206 ghosts that die mid-flight. 90-min probe sweep 16 URL patterns x all platforms exhausted 2026-09-18 ~21:57 (tmp/recovery/retry2.sh)"
+ },
  "3.7.3": {
   "format": "appimage",
   "substitute_for": "linux-x64.deb"
+ },
+ "3.7.4": {
+  "format": "deb",
+  "status": "published-but-unrecoverable",
+  "releaseDate": "2026-08-09T03:05:02.366Z",
+  "published_size": 138233176,
+  "published_sha512": "/Y9BCZyzdHeUSRZGNdXeik1wKwWJzQ8BGqIzXYloySU2ERu2VCMUOJApGlcToaeuAmkb6GaBYarSqKlOvfDzHg==",
+  "recovery_evidence": "published then pulled from CDN: all-platform candidate objects 404 (x-cache HIT cached-negative, OSS NoSuchKey on zcode-release.oss-cn-hongkong); only partial edge-cache 206 ghosts that die mid-flight. 90-min probe sweep 16 URL patterns x all platforms exhausted 2026-09-18 ~21:57 (tmp/recovery/retry2.sh)"
  },
  "3.7.5": {
   "format": "deb"
