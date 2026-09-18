@@ -1,7 +1,26 @@
-installers/
-extracted/
-repo/
-refs/
-tmp/
+# ── corpus artifacts（tools/ 管道的可再生产出，量大不入库）──
+/installers/
+/extracted/
+/extracted-mac/
+/repo/
+/refs/
+/tmp/
+/diffs/
+
+# 大体积下载与抽取出的二进制
 *.deb
+codexacp-*
+
+# python
 __pycache__/
+*.py[cod]
+.ruff_cache/
+
+# os cruft
+.DS_Store
+
+# ── toolchain 本机层（scripts/agent-links.sh、scripts/crossnote-links.sh 重建）──
+/node_modules/
+/CLAUDE.md
+/.claude/
+/.crossnote/

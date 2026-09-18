@@ -1,0 +1,9 @@
+node_modules/
+# 语料产物与三方参考（gitignored 层）：扫描耗时，生成物不该被格式化改写
+installers/
+extracted/
+extracted-mac/
+repo/
+refs/
+tmp/
+diffs/

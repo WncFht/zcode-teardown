@@ -1,0 +1,26 @@
+# 无配置时 `ruff check` 只跑 F+E4/E7/E9(pyflakes 级)——hook 在跑，
+# 但几乎什么都查不出来。select=ALL 全开，ignore 只放必选项和
+# 对本仓库性质为真的豁免，逐条注明，不 hand-pick 白名单。
+target-version = "py39"
+
+[lint]
+select = ["ALL"]
+ignore = [
+  "COM812",
+  "ISC001",  # 官方列名与 ruff format 冲突，必关
+  "D",       # 管道脚本：模块 docstring 已写，不强制逐函数
+  "ANN",     # 脚本不做类型标注
+  "T201",    # emit_status/CLI 输出本就走 print
+  "CPY001",  # 不挂版权头
+  "PTH",     # os.path 是管道脚本惯用法，pathlib 迁移收益低
+  "PLR2004", # 魔数是版本号/字节数等业务常量
+  "RUF001",
+  "RUF002",
+  "RUF003",  # 注释含 CJK，unicode 歧义检查不适用
+  "S603",
+  "S607",    # subprocess 全是固定参数系统工具(ar/tar/strings/rg)，无注入面
+  "C901",
+  "PLR0912",
+  "PLR0915", # 抽取/清单主函数是线性管道，天然分支语句多，阈值告警无行动价值
+  "TRY003",  # CLI 错误信息即 UX，直接写在 raise 处
+]
