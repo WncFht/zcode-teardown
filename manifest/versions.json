@@ -1,0 +1,378 @@
+[
+ {
+  "version": "2.2.0",
+  "url": "https://cdn.zcode-ai.com/zcode/electron/releases/2.2.0/ZCode-2.2.0-linux-x64.deb",
+  "size": 284995872,
+  "releaseDate": "2026-05-14T11:27:05.970Z"
+ },
+ {
+  "version": "2.3.0",
+  "url": "https://cdn.zcode-ai.com/zcode/electron/releases/2.3.0/ZCode-2.3.0-linux-x64.deb",
+  "size": 341025412,
+  "releaseDate": "2026-05-16T04:10:39.484Z"
+ },
+ {
+  "version": "2.3.1",
+  "url": "https://cdn.zcode-ai.com/zcode/electron/releases/2.3.1/ZCode-2.3.1-linux-x64.deb",
+  "size": 304255708,
+  "releaseDate": "2026-05-17T06:59:27.603Z"
+ },
+ {
+  "version": "2.4.0",
+  "url": "https://cdn.zcode-ai.com/zcode/electron/releases/2.4.0/ZCode-2.4.0-linux-x64.deb",
+  "size": 304199176,
+  "releaseDate": "2026-05-18T09:53:57.259Z"
+ },
+ {
+  "version": "2.4.1",
+  "url": "https://cdn.zcode-ai.com/zcode/electron/releases/2.4.1/ZCode-2.4.1-linux-x64.deb",
+  "size": 304199616,
+  "releaseDate": "2026-05-19T03:46:24.898Z"
+ },
+ {
+  "version": "2.5.0",
+  "url": "https://cdn.zcode-ai.com/zcode/electron/releases/2.5.0/ZCode-2.5.0-linux-x64.deb",
+  "size": 339453140,
+  "releaseDate": "2026-05-19T13:09:45.993Z"
+ },
+ {
+  "version": "2.6.0",
+  "url": "https://cdn.zcode-ai.com/zcode/electron/releases/2.6.0/ZCode-2.6.0-linux-x64.deb",
+  "size": 320242836,
+  "releaseDate": "2026-05-20T11:05:38.838Z"
+ },
+ {
+  "version": "2.7.0",
+  "url": "https://cdn.zcode-ai.com/zcode/electron/releases/2.7.0/ZCode-2.7.0-linux-x64.deb",
+  "size": 320729848,
+  "releaseDate": "2026-05-21T11:42:13.607Z"
+ },
+ {
+  "version": "2.8.0",
+  "url": "https://cdn.zcode-ai.com/zcode/electron/releases/2.8.0/ZCode-2.8.0-linux-x64.deb",
+  "size": 320783368,
+  "releaseDate": "2026-05-22T12:28:31.606Z"
+ },
+ {
+  "version": "2.9.0",
+  "url": "https://cdn.zcode-ai.com/zcode/electron/releases/2.9.0/ZCode-2.9.0-linux-x64.deb",
+  "size": 320961920,
+  "releaseDate": "2026-05-25T11:54:24.299Z"
+ },
+ {
+  "version": "2.10.0",
+  "url": "https://cdn.zcode-ai.com/zcode/electron/releases/2.10.0/ZCode-2.10.0-linux-x64.deb",
+  "size": 321021284,
+  "releaseDate": "2026-05-26T12:19:42.009Z"
+ },
+ {
+  "version": "2.11.0",
+  "url": "https://cdn.zcode-ai.com/zcode/electron/releases/2.11.0/ZCode-2.11.0-linux-x64.deb",
+  "size": 287311808,
+  "releaseDate": "2026-05-27T10:26:29.290Z"
+ },
+ {
+  "version": "2.12.0",
+  "url": "https://cdn.zcode-ai.com/zcode/electron/releases/2.12.0/ZCode-2.12.0-linux-x64.deb",
+  "size": 278579472,
+  "releaseDate": "2026-05-28T10:50:22.512Z"
+ },
+ {
+  "version": "2.13.0",
+  "url": "https://cdn.zcode-ai.com/zcode/electron/releases/2.13.0/ZCode-2.13.0-linux-x64.deb",
+  "size": 278576956,
+  "releaseDate": "2026-05-29T10:39:19.969Z"
+ },
+ {
+  "version": "3.1.0",
+  "url": "https://cdn.zcode-ai.com/zcode/electron/releases/3.1.0/ZCode-3.1.0-linux-x64.deb",
+  "size": 113454256,
+  "releaseDate": "2026-06-15T16:17:52.825Z"
+ },
+ {
+  "version": "3.1.1",
+  "url": "https://cdn.zcode-ai.com/zcode/electron/releases/3.1.1/ZCode-3.1.1-linux-x64.deb",
+  "size": 114231892,
+  "releaseDate": "2026-06-16T12:51:42.589Z"
+ },
+ {
+  "version": "3.1.2",
+  "url": "https://cdn.zcode-ai.com/zcode/electron/releases/3.1.2/ZCode-3.1.2-linux-x64.deb",
+  "size": 114241160,
+  "releaseDate": "2026-06-17T14:05:40.932Z"
+ },
+ {
+  "version": "3.1.3",
+  "url": "https://cdn.zcode-ai.com/zcode/electron/releases/3.1.3/ZCode-3.1.3-linux-x64.deb",
+  "size": 114232520,
+  "releaseDate": "2026-06-23T03:59:31.062Z"
+ },
+ {
+  "version": "3.2.0",
+  "url": "https://cdn-zcode.z.ai/zcode/electron/releases/3.2.0/ZCode-3.2.0-linux-x64.deb",
+  "size": 113651892,
+  "releaseDate": "2026-06-29T10:38:22.923Z"
+ },
+ {
+  "version": "3.2.1",
+  "url": "https://cdn-zcode.z.ai/zcode/electron/releases/3.2.1/ZCode-3.2.1-linux-x64.deb",
+  "size": 113658424,
+  "releaseDate": "2026-06-30T13:07:27.645Z"
+ },
+ {
+  "version": "3.2.2",
+  "url": "https://cdn-zcode.z.ai/zcode/electron/releases/3.2.2/ZCode-3.2.2-linux-x64.deb",
+  "size": 113673752,
+  "releaseDate": "2026-07-01T10:21:41.574Z"
+ },
+ {
+  "version": "3.2.3",
+  "url": "https://cdn-zcode.z.ai/zcode/electron/releases/3.2.3/ZCode-3.2.3-linux-x64.deb",
+  "size": 113700064,
+  "releaseDate": "2026-07-02T14:05:43.049Z"
+ },
+ {
+  "version": "3.2.4",
+  "url": "https://cdn-zcode.z.ai/zcode/electron/releases/3.2.4/ZCode-3.2.4-linux-x64.deb",
+  "size": 113701792,
+  "releaseDate": "2026-07-03T05:34:55.308Z"
+ },
+ {
+  "version": "3.2.5",
+  "url": "https://cdn-zcode.z.ai/zcode/electron/releases/3.2.5/ZCode-3.2.5-linux-x64.deb",
+  "size": 113714472,
+  "releaseDate": "2026-07-03T11:27:35.862Z"
+ },
+ {
+  "version": "3.3.0",
+  "url": "https://cdn-zcode.z.ai/zcode/electron/releases/3.3.0/ZCode-3.3.0-linux-x64.deb",
+  "size": 113757008,
+  "releaseDate": "2026-07-07T12:39:56.401Z"
+ },
+ {
+  "version": "3.3.1",
+  "url": "https://cdn-zcode.z.ai/zcode/electron/releases/3.3.1/ZCode-3.3.1-linux-x64.deb",
+  "size": 113755764,
+  "releaseDate": "2026-07-08T04:05:10.015Z"
+ },
+ {
+  "version": "3.3.2",
+  "url": "https://cdn-zcode.z.ai/zcode/electron/releases/3.3.2/ZCode-3.3.2-linux-x64.deb",
+  "size": 113768220,
+  "releaseDate": "2026-07-08T11:56:16.053Z"
+ },
+ {
+  "version": "3.3.3",
+  "url": "https://cdn-zcode.z.ai/zcode/electron/releases/3.3.3/ZCode-3.3.3-linux-x64.deb",
+  "size": 113767364,
+  "releaseDate": "2026-07-08T16:17:28.085Z"
+ },
+ {
+  "version": "3.3.4",
+  "url": "https://cdn-zcode.z.ai/zcode/electron/releases/3.3.4/ZCode-3.3.4-linux-x64.deb",
+  "size": 113797900,
+  "releaseDate": "2026-07-10T03:35:10.298Z"
+ },
+ {
+  "version": "3.3.5",
+  "url": "https://cdn-zcode.z.ai/zcode/electron/releases/3.3.5/ZCode-3.3.5-linux-x64.deb",
+  "size": 114001880,
+  "releaseDate": "2026-07-13T09:50:13.630Z"
+ },
+ {
+  "version": "3.3.6",
+  "url": "https://cdn-zcode.z.ai/zcode/electron/releases/3.3.6/linux-x64/ZCode-3.3.6-linux-x64.deb",
+  "size": 114251860,
+  "sha512": "NwQzSBf+Q5FR3VWwAEQUeALHR9jvDjRT7PJLVQ4iLOyTxPm7Lt8kMQbQXI7MJ/wEDQ0EK3FBBjJQVlJiC4Kgsw==",
+  "releaseDate": "2026-07-15T05:16:57.721Z"
+ },
+ {
+  "version": "3.4.0",
+  "url": "https://cdn-zcode.z.ai/zcode/electron/releases/3.4.0/linux-x64/ZCode-3.4.0-linux-x64.deb",
+  "size": 114790344,
+  "sha512": "wobq/Mf+mxNH2Sez1YWx1IYJtx4AUrYSv4GSBzdwpL2X+7zGQDxgvbm+asiWuSI0dDWk0DgVAMnYr2x7q2UCJA==",
+  "releaseDate": "2026-07-20T08:38:52.123Z"
+ },
+ {
+  "version": "3.4.1",
+  "url": "https://cdn-zcode.z.ai/zcode/electron/releases/3.4.1/linux-x64/ZCode-3.4.1-linux-x64.deb",
+  "size": 114802852,
+  "sha512": "nzteimxSamLgVYO+ECSG0uvOxwTc5eVnHiCkOWls+dF0GCmuRtvOdCgiqZLZ5qmiHTD9wn6drz24bs1YjUoRrQ==",
+  "releaseDate": "2026-07-21T06:51:20.483Z"
+ },
+ {
+  "version": "3.4.2",
+  "url": "https://cdn-zcode.z.ai/zcode/electron/releases/3.4.2/linux-x64/ZCode-3.4.2-linux-x64.deb",
+  "size": 114807656,
+  "sha512": "et+2D9QH+1XanNDH5OPCZGrbKQMCOWkZwX5+OzI5Y230qptE5PxtgiGOBVksF2mQFz0uTf4WJUMhgVKR8qlVdw==",
+  "releaseDate": "2026-07-21T11:34:24.494Z"
+ },
+ {
+  "version": "3.5.2",
+  "url": "https://cdn-zcode.z.ai/zcode/electron/releases/3.5.2/linux-x64/ZCode-3.5.2-linux-x64.deb",
+  "size": 120550144,
+  "sha512": "Z/meOYwfVyN2jxjS0eHoKz0ib4vbVJmQW1yUbvP7z++dnVKkWmtp6esuffu4XTBm+EhZc3e9B7Boif0T0YeTzQ==",
+  "releaseDate": "2026-07-24T14:55:11.067Z"
+ },
+ {
+  "version": "3.5.3",
+  "url": "https://cdn-zcode.z.ai/zcode/electron/releases/3.5.3/linux-x64/ZCode-3.5.3-linux-x64.deb",
+  "size": 120551000,
+  "sha512": "7aGUVxRKZyh535O79x+XAI1vgdLW6Uy9ldqQc7x3v6YAfxbD3PenVKDjTpRgpCyVPBT9jEUEQLE9LwO0BEYoyg==",
+  "releaseDate": "2026-07-27T13:35:54.118Z"
+ },
+ {
+  "version": "3.6.1",
+  "url": "https://cdn-zcode.z.ai/zcode/electron/releases/3.6.1/linux-x64/ZCode-3.6.1-linux-x64.deb",
+  "size": 138055016,
+  "sha512": "AHTPlryBptfu71LzCuvxsQL1OKES7ZgLp6cXLGb9ZUhpWqaQxBJFCi1yLJS+KgWTeQ9nXl3qZzbm4Raq7BMz4Q==",
+  "releaseDate": "2026-07-29T09:38:55.563Z"
+ },
+ {
+  "version": "3.6.2",
+  "url": "https://cdn-zcode.z.ai/zcode/electron/releases/3.6.2/linux-x64/ZCode-3.6.2-linux-x64.deb",
+  "size": 138054824,
+  "sha512": "hUfvySVVp+2Fl2hOuBAqFVTbUzZ5gm6lG+RWeDoFm6PPTtYwyvRyGoDZEGHOOeIaXssM0FuTfC5ffQBTCli0hA==",
+  "releaseDate": "2026-07-29T14:37:01.174Z"
+ },
+ {
+  "version": "3.6.4",
+  "url": "https://cdn-zcode.z.ai/zcode/electron/releases/3.6.4/linux-x64/ZCode-3.6.4-linux-x64.deb",
+  "size": 138093216,
+  "sha512": "a1ueuXGt3CwxiUB+ddH6W2ZqSQfIub4FrKT9tkCMDXkmpkIGxB1fzAgFGJsQvWdkzK+YJjQf2F+XLIHRmDYNyA==",
+  "releaseDate": "2026-07-30T16:49:02.930Z"
+ },
+ {
+  "version": "3.6.5",
+  "url": "https://cdn-zcode.z.ai/zcode/electron/releases/3.6.5/linux-x64/ZCode-3.6.5-linux-x64.deb",
+  "size": 138049804,
+  "sha512": "B4zIhJPTC/F/M4QzPSCuM7WPNY1KuoTS3U1phtQgEXuS8uyNhOBjg5b7H/1Q0i/5g74Xh24nyXEwjdvK94tgFQ==",
+  "releaseDate": "2026-07-31T12:57:33.714Z"
+ },
+ {
+  "version": "3.7.1",
+  "url": "https://cdn-zcode.z.ai/zcode/electron/releases/3.7.1/linux-x64/ZCode-3.7.1-linux-x64.deb",
+  "size": 138229952,
+  "sha512": "GpjFLxm7otAq/fowe5QY4vemWMlK7SRDgUCcPnbCSHKwyZ9pNoJSCX/8nEmg0IRL9JOljHRW7NdaaHbFSM0ulw==",
+  "releaseDate": "2026-08-06T14:50:40.268Z"
+ },
+ {
+  "version": "3.7.2",
+  "url": "https://cdn-zcode.z.ai/zcode/electron/releases/3.7.2/linux-x64/ZCode-3.7.2-linux-x64.deb",
+  "size": 138229984,
+  "sha512": "UfoLazOgByklMVoMXU9GU7eNzEj6Fl169RLVFKhl4LVzVo5OFzyDqnEYoQ1L/z0+E+bqOecXpasthjzhNx2cMQ==",
+  "releaseDate": "2026-08-07T00:53:59.817Z"
+ },
+ {
+  "version": "3.7.3",
+  "url": "https://cdn-zcode.z.ai/zcode/electron/releases/3.7.3/linux-x64/ZCode-3.7.3-linux-x64.deb",
+  "size": 138230456,
+  "sha512": "YwYP2b8z0XPYdys/3Elgg7KvwsBb12Pn2PbP0VCdcdvlxAnJCLUgUMq8n/OCSXUp3xEdriqfb5riEF7eJhJldA==",
+  "releaseDate": "2026-08-07T03:20:36.519Z"
+ },
+ {
+  "version": "3.7.4",
+  "url": "https://cdn-zcode.z.ai/zcode/electron/releases/3.7.4/linux-x64/ZCode-3.7.4-linux-x64.deb",
+  "size": 138233176,
+  "sha512": "/Y9BCZyzdHeUSRZGNdXeik1wKwWJzQ8BGqIzXYloySU2ERu2VCMUOJApGlcToaeuAmkb6GaBYarSqKlOvfDzHg==",
+  "releaseDate": "2026-08-09T03:05:02.366Z"
+ },
+ {
+  "version": "3.7.5",
+  "url": "https://cdn-zcode.z.ai/zcode/electron/releases/3.7.5/linux-x64/ZCode-3.7.5-linux-x64.deb",
+  "size": 138234456,
+  "sha512": "+gCFedwyxr4BJEIQ4QWmbj21FlyGn7Gb3LbcQsyx38PKAt2qoRbjAVjM5XVU0Tj5wViuKFZk/1xRuem28Kjf7A==",
+  "releaseDate": "2026-08-09T07:59:30.455Z"
+ },
+ {
+  "version": "3.7.6",
+  "url": "https://cdn-zcode.z.ai/zcode/electron/releases/3.7.6/linux-x64/ZCode-3.7.6-linux-x64.deb",
+  "size": 138246124,
+  "sha512": "G2/jCJdOOc7vlCSoqJjCyz7UTdaBWucW7+itRYU5jCEeqvirGOau3hK7HAuf4/Ahv5qQNBO3kU2JjwXx4kdCWQ==",
+  "releaseDate": "2026-08-10T10:28:35.173Z"
+ },
+ {
+  "version": "3.7.7",
+  "url": "https://cdn-zcode.z.ai/zcode/electron/releases/3.7.7/linux-x64/ZCode-3.7.7-linux-x64.deb",
+  "size": 138243788,
+  "sha512": "9vUj/HFAUk0AS7S/TwPr6qa+qJv8ccAIvHJxp29TYvVnMoOZKPQ3rDiTlXGo9htFL7V5HBRb0n+NbXm5Cm5BqA==",
+  "releaseDate": "2026-08-14T03:14:49.582Z"
+ },
+ {
+  "version": "3.8.1",
+  "url": "https://cdn-zcode.z.ai/zcode/electron/releases/3.8.1/linux-x64/ZCode-3.8.1-linux-x64.deb",
+  "size": 138181236,
+  "sha512": "iewB8VqMNFByReFlWdbbbec5h05aldHhMC1/3rwELvz9lCcBkRHW7iF5K2hYsVVceh/Ii9ipTSdPeIG8tbNH5A==",
+  "releaseDate": "2026-08-18T14:40:58.756Z"
+ },
+ {
+  "version": "3.9.1",
+  "url": "https://cdn-zcode.z.ai/zcode/electron/releases/3.9.1/linux-x64/ZCode-3.9.1-linux-x64.deb",
+  "size": 145854368,
+  "sha512": "fLaABx0pWDK2ZrrTD8akdFYv9mAO2ZqMw4ozp0pUcIHE4LsJZ1tSZT4EXkda9M1MxA7wnz1m4fdqDbSuiP+HWw==",
+  "releaseDate": "2026-08-23T02:17:26.638Z"
+ },
+ {
+  "version": "3.9.2",
+  "url": "https://cdn-zcode.z.ai/zcode/electron/releases/3.9.2/linux-x64/ZCode-3.9.2-linux-x64.deb",
+  "size": 145857328,
+  "sha512": "WYe2n1emUfKQYb3RKBxwUzoyjtd/HsFfx8DoSSBclkhz0ojl3el5VyZ9FP2B0XY7kZa/O8dcETU761+P+v2kfg==",
+  "releaseDate": "2026-08-26T11:24:23.741Z"
+ },
+ {
+  "version": "3.10.0",
+  "url": "https://cdn-zcode.z.ai/zcode/electron/releases/3.10.0/linux-x64/ZCode-3.10.0-linux-x64.deb",
+  "size": 146822432,
+  "sha512": "Ixz1C0niE5eNmGSquKjb7WnFC0Lh3COVK74hKafY1Io3KxdvIfdldIK+AzyqlY6FO68SMrBbwo2vHvptnxbO2w==",
+  "releaseDate": "2026-08-27T16:43:31.636Z"
+ },
+ {
+  "version": "3.10.1",
+  "url": "https://cdn-zcode.z.ai/zcode/electron/releases/3.10.1/linux-x64/ZCode-3.10.1-linux-x64.deb",
+  "size": 146822456,
+  "sha512": "hx+w6zhwdv6PeufKV24hVZcJAxw0/m+uHTq+dm0tLfc+31JzizpffM7LiSfIY9RFt6lZCdzyLRyLdtjgDmCyiA==",
+  "releaseDate": "2026-08-28T04:20:28.872Z"
+ },
+ {
+  "version": "3.10.2",
+  "url": "https://cdn-zcode.z.ai/zcode/electron/releases/3.10.2/linux-x64/ZCode-3.10.2-linux-x64.deb",
+  "size": 146822580,
+  "sha512": "bb9VQ+/T8Lu4YIgiTOHVIlVRzY8XnRvDzXvOrcYFIWCl8FVgb8bRhfA5/5oewXgLGY2rTSGYQZlnHbeZ2jVl3Q==",
+  "releaseDate": "2026-08-31T04:35:30.968Z"
+ },
+ {
+  "version": "3.11.1",
+  "url": "https://cdn-zcode.z.ai/zcode/electron/releases/3.11.1/linux-x64/ZCode-3.11.1-linux-x64.deb",
+  "size": 146865912,
+  "sha512": "TY3prw680IDkcvEeNnM2ecFETWzVmpKYQ/x+pcwSePR1h8ReCVnwG1ynfK5BYeRbRGQnTOgyHScYXyBm4jnc5Q==",
+  "releaseDate": "2026-09-04T03:34:18.553Z"
+ },
+ {
+  "version": "3.11.2",
+  "url": "https://cdn-zcode.z.ai/zcode/electron/releases/3.11.2/linux-x64/ZCode-3.11.2-linux-x64.deb",
+  "size": 146866560,
+  "sha512": "4UAMZSP9ZWBrnb8wGaP39rb5dB5ikPx4aYPXKXGea1Vmd6L6vGma3rXwRxKbhBxgsCIE9jv6tmrdSL60RrzGcA==",
+  "releaseDate": "2026-09-04T08:25:11.919Z"
+ },
+ {
+  "version": "3.12.1",
+  "url": "https://cdn-zcode.z.ai/zcode/electron/releases/3.12.1/linux-x64/ZCode-3.12.1-linux-x64.deb",
+  "size": 146849628,
+  "sha512": "CukynDkvId5bYXr3UWioih0mgwV8Xp2hoRdJUYroTRf2RsGwrtljrIF0sCTXM7evuOIsTBTY3SkGMUKF3A4+6A==",
+  "releaseDate": "2026-09-13T03:51:52.101Z"
+ },
+ {
+  "version": "3.12.2",
+  "url": "https://cdn-zcode.z.ai/zcode/electron/releases/3.12.2/linux-x64/ZCode-3.12.2-linux-x64.deb",
+  "size": 146875212,
+  "sha512": "3W6a46c0XyEl4hctYqAXt1kG/kdly0e65V0B5tgNsF1okZADq245XiTkg3utXbgeuAGlfjNi/Tc6Wx6tp9ahow==",
+  "releaseDate": "2026-09-16T03:04:06.372Z"
+ },
+ {
+  "version": "3.12.3",
+  "url": "https://cdn-zcode.z.ai/zcode/electron/releases/3.12.3/linux-x64/ZCode-3.12.3-linux-x64.deb",
+  "size": 146906820,
+  "sha512": "0qTB5098ZqyacbPjUCUPqqgKAt+a9jP3mij8bln0GfF232W8DnKoGmohytMTwdHN4L26AtYB4AS7mq9m9jB6FA==",
+  "releaseDate": "2026-09-16T15:10:46.120Z"
+ }
+]

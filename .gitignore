@@ -1,0 +1,7 @@
+installers/
+extracted/
+repo/
+refs/
+tmp/
+*.deb
+__pycache__/
