@@ -117,7 +117,7 @@ def main():
     notes_dir = f"{ROOT}/notes"
     evidence_re = re.compile(
         r"(v\d+\.\d+\.\d+"  # version tag ref
-        r"|\b\d+\.\d+\.\d+\b"  # bare version number
+        r"|\b\d+\.\d+\.[\dx]+\b"  # bare version number (incl. 3.11.x)
         r"|diffs/\S+\.md|signatures/\S+\.json"  # artifact refs
         r"|\b[a-f0-9]{7,40}\b"  # git sha / content hash
         r"|\w[\w./-]*\.(?:js|ts|json|cjs|toml|yml|py|sh|md):\d+"  # file:line
@@ -125,10 +125,13 @@ def main():
         r"|\w[\w./-]*\.(?:AppImage|deb|dmg|zip)\b"
         r"|\b(?:zcode\.cjs|MANIFEST\.json|HOST\.json|SOURCE\.json"
         r"|app-update\.yml|bundle-meta)\b"
-        r"|\b(?:glm|tools|app/out|model-providers|node_modules)/[\w./-]*"
+        r"|\b(?:glm|tools|app/out|model-providers|node_modules"
+        r"|gemini|codex|opencode|acp|acp-proxy-runtime"
+        r"|main|host)/[\w./-]*"  # main/ host/ = app/out shorthand
         r"|\bL\d+\b|tmp/lane-\S+|extracted/\S+|repo/\S+"
         r"|\[\^[\w-]+\])"  # footnote citation
     )
+    table_sep_re = re.compile(r"^\|[\s:|-]+\|$")
     notes_report = {}
     if os.path.isdir(notes_dir):
         for fn in sorted(os.listdir(notes_dir)):
@@ -139,21 +142,30 @@ def main():
             # itself cites evidence inherit the chain (### a -> b (diffs/..),
             # "source: extracted/x.y/zcode.cjs" paragraphs); resets per heading
             section_cited = False
+            in_review = False
             with open(os.path.join(notes_dir, fn)) as fh:
-                for line in fh:
-                    s = line.strip()
-                    if s.startswith("#"):
-                        section_cited = bool(evidence_re.search(s))
-                        continue
-                    if not s:
-                        continue
-                    if s.startswith(("- ", "* ", "| ")) and len(s) > 40:
-                        claims += 1
-                        if evidence_re.search(s) or section_cited:
-                            cited += 1
-                    elif evidence_re.search(s):
-                        # preamble line carrying the section's evidence
-                        section_cited = True
+                rows = [ln.strip() for ln in fh]
+            for i, s in enumerate(rows):
+                if s.startswith("#"):
+                    in_review = bool(re.search(r"\bREVIEW\b", s, re.IGNORECASE))
+                    section_cited = bool(evidence_re.search(s))
+                    continue
+                if in_review:
+                    continue  # REVIEW sections hold declared-uncertain findings
+                if not s:
+                    continue
+                nxt = rows[i + 1] if i + 1 < len(rows) else ""
+                if table_sep_re.match(s) or (
+                    s.startswith("|") and table_sep_re.match(nxt)
+                ):
+                    continue  # table separator/header rows are structure, not claims
+                if s.startswith(("- ", "* ", "| ")) and len(s) > 40:
+                    claims += 1
+                    if evidence_re.search(s) or section_cited:
+                        cited += 1
+                elif evidence_re.search(s):
+                    # preamble line carrying the section's evidence
+                    section_cited = True
             notes_report[fn] = {
                 "claim_lines": claims,
                 "cited": cited,
