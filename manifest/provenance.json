@@ -79,7 +79,7 @@
  },
  "3.14.0": {
   "format": "deb",
-  "note": "latest-linux.yml feed pulled CDN-wide (404 for all versions incl. previously archived ones) as of 2026-09-19; size/releaseDate taken from deb HEAD last-modified; sha512 self-computed post-download"
+  "note": "latest-linux.yml static archives pulled CDN-wide (404 for all versions incl. previously archived ones) as of 2026-09-19; size/releaseDate taken from deb HEAD last-modified; sha512 confirmed against official update manifest API (zcode.z.ai/api/v1/releases/electron/manifest, latest-only)"
  },
  "3.2.0": {
   "format": "exe",

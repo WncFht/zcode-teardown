@@ -72,6 +72,15 @@ tools/extract_signatures.py <ver>      # 10 类签名 → signatures/<ver>.json
 
 59 个已发布版本中 56 个完成全链入库；3.7.1/3.7.2/3.7.4 被 CDN rolling-pull 撤下，按 `published-but-unrecoverable` 记账（保留 size/sha512/releaseDate 证据）。15 版为替代格式恢复（win-exe×5、AppImage×9、mac dmg×1），`manifest/provenance.json` 逐版记账。3.13.x 整条线未在 linux-x64 发布，版本号自 3.12.3 直跳 3.14.0。
 
+### 官方证据面状态（2026-09-19）
+
+**安装包实物未被清理**：55 个 linux-x64 deb + 15 个替代格式安装包全部仍可下载（全量 HEAD 探测复核，除已记账的 3.7.x 三件外零缺口）。被撤的是两类外围面：
+
+- **逐版 `latest*.yml` 静态归档**：CDN 级 404（含此前已存档的版本），本仓 `manifest/` 内留有 77 版 yml 抓取存档。
+- **3.7.1/3.7.2/3.7.4 三件 deb**：rolling-pull 撤下，CDN 侧仅剩中途断流的 206 缓存残影。
+
+官方元数据渠道迁移至应用内更新 manifest API（`zcode.z.ai/api/v1/releases/electron/manifest?platform=<plat>`，只服务最新版，双语 releaseNotes + 全平台 sha512）——其 3.14.0 deb sha512 与本仓自算值逐字节一致，官网 changelog 亦已列至 3.14.0。即：二进制证据面完整，披露渠道从静态逐版归档收缩为"仅最新版"的应用内接口。
+
 ## 声明
 
 本仓库为安全研究项目，所有分析基于公开发布的安装包逆向完成，仅用于理解软件行为与促进用户知情。文中涉及的产品名称、商标归原厂商所有。如厂商对本仓库内容有异议，请通过 issue 联系。

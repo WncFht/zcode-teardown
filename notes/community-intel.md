@@ -1,13 +1,14 @@
 # 外部宣称档案（Community Intel）
 
-> Lane C12 产出。汇总 ZCode 官方渠道（CDN `latest.yml` releaseNotes、官网 changelog、官方文档、feedback 仓、官方知乎）与第三方社区（HN、博客、先行逆向项目）的全部**对外宣称**，供各 lane 对照二进制实测（"宣称 vs 实测"）。
+> Lane C12 产出。汇总 ZCode 官方渠道（CDN `latest.yml` releaseNotes、应用内更新 manifest API、官网 changelog、官方文档、feedback 仓、官方知乎）与第三方社区（HN、博客、先行逆向项目）的全部**对外宣称**，供各 lane 对照二进制实测（"宣称 vs 实测"）。
 >
 > 宣称一律不等于事实。每条给出来源脚注；"待验证"列给出二进制侧的检查钩子。
 
 ## 来源与方法
 
-- **CDN `latest.yml`**：对全部 77 个已发现版本逐版抓取（linux 58 版全量 + 3.0.x/1.x/2.0/2.1 补全），内含 `releaseDate` 与中英双语 `releaseNotes`。这是**唯一覆盖全版本**的官方宣称源；原始文件经逐版抓取存档，解析结果汇总为结构化 JSON[^yml]。**⚠️ 2026-09-19 起该 feed 已 CDN 级撤除**——`releases/<ver>/latest{,-linux}.yml` 对全部版本（含此前可取的存档版）均返回 404，存档抓取成绝版；此后新版的 `releaseDate`/sha512/releaseNotes 无官方渠道可考，只能取 deb HEAD 元数据。
-- **官网 changelog**（`zcode.z.ai/cn/changelog`）：仅列 **8 个版本**（3.8.1–3.12.3），与 yml 文本一致[^site-changelog]。
+- **CDN `latest.yml`**：对全部 77 个已发现版本逐版抓取（linux 58 版全量 + 3.0.x/1.x/2.0/2.1 补全），内含 `releaseDate` 与中英双语 `releaseNotes`。这是**唯一覆盖全版本**的官方宣称源；原始文件经逐版抓取存档，解析结果汇总为结构化 JSON[^yml]。**⚠️ 2026-09-19 起该 feed 已 CDN 级撤除**——`releases/<ver>/latest{,-linux}.yml` 对全部版本（含此前可取的存档版）均返回 404，存档抓取成绝版；此后新版 `releaseDate` 只能取 deb HEAD 元数据。
+- **应用内更新 manifest API**（`zcode.z.ai/api/v1/releases/electron/manifest?platform=<plat>`）：yml 撤除后官方宣称/哈希的替代渠道——YAML 含双语 releaseNotes + 全平台 files/sha512/size，**只服务最新版**（3.14.0 deb sha512 与本仓自算值一致）[^manifest-api]。
+- **官网 changelog**（`zcode.z.ai/cn/changelog`）：列 **9 个版本**（3.8.1–3.14.0），与官方 releaseNotes 文本一致[^site-changelog]。
 - **官方文档站**：welcome/configuration/agents/plugin/skill 等 26 页[^docs]。
 - **feedback 仓** `zai-org/feedback`：README 标签体系 + issues（564 条）[^feedback]。
 - **官方知乎**：智谱官号升级公告（Goal/Subagents/Remote Control/闲时任务发布）[^zhihu]。
@@ -111,7 +112,7 @@
 | 3.12.1 ⚠ | 09-13 | **模型管理大改版**、三方模型适配；**闲时任务自然语言创建**（聊天中卡片直达表单）；插件 @ 引用中文搜索；Markdown 预览选中正文加入对话；输入框"+"菜单；权限反馈换行；登录失败取消按钮；**会话分享支持用户附件**；**工作区面板改版**（会话/终端/Side Pane 独立面板） | 闲时任务 NL 入口；分享上传链路                                                                                                        |
 | 3.12.2 ⚠ | 09-16 | 计划模式与排队消息优化；**OpenCode Go 服务商模板与站点映射**；数据库初始化升级；**官方 Claude 插件市场刷新提示**（注：yml `releaseName` 误标为 "Release v3.11.2"）                                                                                                | OpenCode Go provider 模板；Claude 市场源                                                                                              |
 | 3.12.3 ★ | 09-16 | ≈3.12.2 + 套餐获取失败重登录入口、Linux 自动更新修复                                                                                                                                                                                                              | —                                                                                                                                     |
-| 3.14.0   | 09-19 | **宣称不可考**：yml feed 已撤、官网 changelog（2026-09-19 抓取）仍止于 3.12.3；**3.13.x 整条线 linux-x64 未发布**（3.13.0–3.13.4 + 3.12.4/3.12.5 deb 全 404），3.12.3 直跳 3.14.0                                                                                 | 二进制实测见 `line-3.14.md`（dynamic workflows 引擎化、CUA SDK v3 迁 node-repl-host、document-skills 一拆五、快照凭证端点字面量撤出） |
+| 3.14.0   | 09-19 | 动态工作流（CreateWorkflow）、办公/编程双模式切换、快捷键录制生效、三步新手引导、归档任务批量删除[^site-changelog][^manifest-api]；**3.13.x 整条线 linux-x64 未发布**（3.13.0–3.13.4 + 3.12.4/3.12.5 deb 全 404），3.12.3 直跳 3.14.0                             | 二进制实测见 `line-3.14.md`（dynamic workflows 引擎化、CUA SDK v3 迁 node-repl-host、document-skills 一拆五、快照凭证端点字面量撤出） |
 
 ## 特性时间线（首宣版本 → 待验证）
 
@@ -196,13 +197,15 @@ ACP 宣称：`zcode-acp` 二进制经 stdio JSON-RPC（`session/create|resume|se
 9. **Claude 兼容层深度**：插件 manifest 兼容 `.claude-plugin/plugin.json`、预置 Claude Code 插件市场、`${CLAUDE_PLUGIN_ROOT}` 变量、3.12.2 "官方 Claude 插件市场"[^docs-plugin][^yml]；加上提示词相似指控[^80aj]与 ACP 目录命名——"自研"宣称 vs Claude 生态依赖的边界值得逐版描。
 10. **加密凭据的 fallback 密钥**：pi-zcode 称 `ZCODE_CREDENTIAL_SECRET` 缺省时回退到可预测的 `"zcode-credential-fallback:<platform>:<homedir>:<username>"` 派生密钥，且 API Key 另有明文落盘[^pi]。→ 二进制确认加密实现与明文面。
 11. **3.3.x 事故级连发**：3.3.0→3.3.3 三天四版、官方为 Windows 无法升级公开致歉[^yml]；该窗口期正是 CDN 扁平/嵌套布局切换点——工程事故与发布管线迁移可能同源。
-12. **宣称渠道收缩（2026-09-19）**：`latest.yml`/`latest-linux.yml` 全版本撤除（含旧版存档路径），官网 changelog 滞后于 CDN 实物（3.14.0 已上架未列）；同日二进制侧观测到快照凭证端点字面量撤出、`repoSnapshot*` 标识符族消失——披露面收缩与 3.14.0 发布同窗口，是否为同一次管线变更待后续版本验证。
+12. **宣称渠道迁移（2026-09-19）**：`latest.yml`/`latest-linux.yml` 静态归档全版本撤除（含旧版存档路径），官方 releaseNotes 与 sha512 渠道转为应用内更新 manifest API（`zcode.z.ai/api/v1/releases/electron/manifest`，只服务最新版）[^manifest-api]；官网 changelog 已同步列 3.14.0[^site-changelog]。同日二进制侧观测到快照凭证端点字面量撤出、`repoSnapshot*` 标识符族消失——披露面迁移与 3.14.0 发布同窗口，是否为同一次管线变更待后续版本验证。
 
 ### 参考文献
 
-[^yml]: ZCode CDN update metadata. `latest.yml`/`latest-linux.yml`，77 版，抓取于 2026-09-18.
+[^yml]: ZCode CDN update metadata. `latest.yml`/`latest-linux.yml`，77 版，抓取于 2026-09-18（静态归档 2026-09-19 起 CDN 级撤除）.
 
-[^site-changelog]: ZCode. Changelog. [zcode.z.ai/cn/changelog](https://zcode.z.ai/cn/changelog)（仅 3.8.1–3.12.3）.
+[^manifest-api]: ZCode in-app update manifest. `zcode.z.ai/api/v1/releases/electron/manifest?platform=<plat>`（YAML，双语 releaseNotes + 全平台 sha512，只服务最新版；3.14.0 deb sha512 与本仓自算一致），抓取于 2026-09-19.
+
+[^site-changelog]: ZCode. Changelog. [zcode.z.ai/cn/changelog](https://zcode.z.ai/cn/changelog)（3.8.1–3.14.0）.
 
 [^docs]: ZCode Docs. [zcode.z.ai/cn/docs/welcome](https://zcode.z.ai/cn/docs/welcome) 及侧边栏 26 页。
 
