@@ -248,10 +248,11 @@ def fig_pipeline():
         color="#666",
     )
 
-    fig.savefig(
-        os.path.join(OUT_DIR, "snapshot-upload-pipeline.svg"),
-        bbox_inches="tight",
-    )
+    for ext in ("svg", "pdf"):
+        fig.savefig(
+            os.path.join(OUT_DIR, f"snapshot-upload-pipeline.{ext}"),
+            bbox_inches="tight",
+        )
     plt.close(fig)
 
 
@@ -336,10 +337,11 @@ def fig_timeline(tags):
     ax.set_title(
         "快照上传功能边界演化（55 个入库 tag，横轴按版本排序）", fontsize=12, pad=10
     )
-    fig.savefig(
-        os.path.join(OUT_DIR, "snapshot-upload-timeline.svg"),
-        bbox_inches="tight",
-    )
+    for ext in ("svg", "pdf"):
+        fig.savefig(
+            os.path.join(OUT_DIR, f"snapshot-upload-timeline.{ext}"),
+            bbox_inches="tight",
+        )
     plt.close(fig)
 
 
@@ -440,10 +442,11 @@ def fig_consent(tags):
         fontsize=12,
         pad=8,
     )
-    fig.savefig(
-        os.path.join(OUT_DIR, "snapshot-upload-consent.svg"),
-        bbox_inches="tight",
-    )
+    for ext in ("svg", "pdf"):
+        fig.savefig(
+            os.path.join(OUT_DIR, f"snapshot-upload-consent.{ext}"),
+            bbox_inches="tight",
+        )
     plt.close(fig)
 
 
@@ -522,10 +525,11 @@ def fig_visibility():
         color="#444",
     )
     ax.set_title("离机字节可见性矩阵（谁实际看到什么形态的数据）", fontsize=12, pad=10)
-    fig.savefig(
-        os.path.join(OUT_DIR, "snapshot-upload-visibility.svg"),
-        bbox_inches="tight",
-    )
+    for ext in ("svg", "pdf"):
+        fig.savefig(
+            os.path.join(OUT_DIR, f"snapshot-upload-visibility.{ext}"),
+            bbox_inches="tight",
+        )
     plt.close(fig)
 
 
@@ -536,7 +540,7 @@ def main():
     fig_timeline(tags)
     fig_consent(tags)
     fig_visibility()
-    print("wrote 4 figures to", OUT_DIR)
+    print("wrote 4 figures (svg+pdf) to", OUT_DIR)
 
 
 if __name__ == "__main__":
