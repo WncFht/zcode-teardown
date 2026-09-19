@@ -27,12 +27,12 @@ Scope: v3.12.3（build 7463）→ v3.14.0（build 7681，build-meta commit `a132
 
 `glm/packages/` 8→14 目录。`document-skills-plugin`（0.1.5）删除，拆为 **documents@0.1.7（skills/docx）、pdf@0.1.7（skills/pdf）、presentations@0.1.7（skills/pptx）、spreadsheets@0.1.7（skills/xlsx）**——每插件各带 `agents/`；原 document-skills 的 HTTP MCP `image_search`（`${ZCODE_BASE_URL}/api/v1/mcp/server/image_search`，`zcode_official`+jwt_token，90s）迁入独立 **`image-search@0.1.1`**（无 skills，纯 MCP）。**plugin-creator@0.1.1 首发**："Develop and validate ZCode plugins through a local dev marketplace, installation, trials and updates"，skills 目录齐备——插件创作工具链进场（skill-creator 的插件版对偶）。zcode-guide 0.1.0→0.2.0（+workflow 命令 +dynamic-workflows skill）、browser-use 0.4.2→0.5.1、computer-use →0.6.1。native +2：`@img/sharp-linux-x64`（同 sha `fdbcd90b…`）复制进 browser-use-plugin 与 node-repl-host 的 node_modules（zcode-cua 原有的一份仍在，sharp 实体现三份）。
 
-## 快照上传面：凭证端点字面量消失，管线存疑待裁
+## 快照上传面：功能族整体移除
 
 - 签名 endpoints `−/api/v1/snapshot/upload-credential`；全树 `rg` 确认该字面量在 3.14.0 任何文件中均不存在（`upload-credential` 一词仅存于 main/index.js 一个 ~50 词的 URL 路径段字典内）。`/mcp`、`/oauth/` 同版消失——两者均在已删除的 CUA `dist/mcp/server.js` 内（3.12.3 该文件 54 处命中），非控制平面变化。
 - `repoSnapshot*`/`captureIntent*`/`enforceRepoSnapshotDiskQuota`/`repoSnapshotCaptureIntentScheduler` 标识符族在 `app/out/**` 全部消失；`PostObject` 字面量亦消失。
 - 但 OSS **signature-v4** 表单字段（`x-oss-signature`/`x-oss-signature-version`/`x-oss-credential`/`x-oss-security-token`/`x-oss-date`、`e.oss.{path,policy,…}`、`callbackBody` base64）仍在 `host/index.js`，附着的调用方是通用上传族：`FeedbackUploadCanceledError`、`browserRecordingUploader`、`on{,Dynamic}UploadProgress`、`summarizeUploadCredentialBody`、`computeUploadTimeoutMs`。
-- 判定（本 lane 口径，快照报告 lane 复裁）：**工作区快照专用的标识符与凭证端点字面量确实撤出**，存活的是反馈/录屏通用 OSS 直传面；快照管线是被移除、改名还是上收服务端，需要对照 host 全量调用链——见 `2026-09-19-工作区快照上传` 报告的本版增补。
+- 判定：**工作区快照上传功能族整体移除**——工作区快照专用的标识符、设置键与凭证端点字面量全部撤出，存活的是反馈/录屏通用 OSS 直传面；28 项追踪指标本版归零，逐类清点见 `2026-09-19-工作区快照上传` 报告 §14。
 
 ## 其余签名增量
 
@@ -61,7 +61,6 @@ Scope: v3.12.3（build 7463）→ v3.14.0（build 7681，build-meta commit `a132
 
 ## REVIEW
 
-- **快照管线存废未裁**：`repoSnapshot*` 族与凭证端点字面量消失 + OSS v4 表单仍在 = 三种可能（改名重写 / 功能移除 / 服务端化）。本 lane 只立字面量证据；结论归快照报告 lane（该 lane 同步更新 `snapshot-tracking.json` 的 v3.14.0 列）。
 - **`session/debug` 语义**：注册表新增但消费方未追踪（可能 remote-replay/debug 通道）。
 - **`ZCODE_DYNAMIC_WORKFLOW_MODES` 枚举值**：env 表只露键名，模式集合未展开（dynamicWorkflowRunPort 的实现暗示可下发 run/snippet 两类执行）。
 - **marketing touch 后端语义**：`entity_changed` 动作类型的具体上报内容未逐字段解。
