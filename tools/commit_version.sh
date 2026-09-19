@@ -24,8 +24,8 @@ exec 9>"$LOCK"
 flock 9
 [ -d "$REPO/.git" ] || git -C "$REPO" init -q
 git -C "$REPO" config core.bare true
-git -C "$REPO" config user.name >/dev/null 2>&1 || git -C "$REPO" config user.name "zcode-rev"
-git -C "$REPO" config user.email >/dev/null 2>&1 || git -C "$REPO" config user.email "rev@localhost"
+git -C "$REPO" config user.name >/dev/null 2>&1 || git -C "$REPO" config user.name "zcode-teardown"
+git -C "$REPO" config user.email >/dev/null 2>&1 || git -C "$REPO" config user.email "teardown@localhost"
 git -C "$REPO" --work-tree="$SRC" add -A -f
 GIT_AUTHOR_DATE="$DATE" GIT_COMMITTER_DATE="$DATE" git -C "$REPO" --work-tree="$SRC" commit -q --allow-empty -m "v$VER"
 git -C "$REPO" tag -f "v$VER" >/dev/null

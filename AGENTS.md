@@ -1,6 +1,6 @@
 # AGENTS.md
 
-ZCode linux-x64 全版本逆向语料仓：按 `manifest/versions.json` 下载 .deb → 解包 → 指纹清单 → 以版本 tag 快照进内嵌 git → 抽取签名 → 写分析笔记。
+ZCode Teardown（ZCode linux-x64 全版本逆向语料仓）：按 `manifest/versions.json` 下载 .deb → 解包 → 指纹清单 → 以版本 tag 快照进内嵌 git → 抽取签名 → 写分析笔记。
 
 ## 仓库布局
 

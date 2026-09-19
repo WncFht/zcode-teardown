@@ -1,6 +1,6 @@
 {
  "$schema": "https://json-schema.org/draft/2020-12/schema",
- "$id": "zcode-rev/signature_schema.json",
+ "$id": "zcode-teardown/signature_schema.json",
  "title": "ZCode version signature snapshot",
  "type": "object",
  "required": ["version", "engine", "generated", "counts", "categories"],
