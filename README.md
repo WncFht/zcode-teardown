@@ -70,3 +70,11 @@ tools/extract_signatures.py <ver>      # 10 类签名 → signatures/<ver>.json
 ### 语料覆盖
 
 58 个已发布版本中 55 个完成全链入库；3.7.1/3.7.2/3.7.4 被 CDN rolling-pull 撤下，按 `published-but-unrecoverable` 记账（保留 size/sha512/releaseDate 证据）。15 版为替代格式恢复（win-exe×5、AppImage×9、mac dmg×1），`manifest/provenance.json` 逐版记账。
+
+## 声明
+
+本仓库为安全研究项目，所有分析基于公开发布的安装包逆向完成，仅用于理解软件行为与促进用户知情。文中涉及的产品名称、商标归原厂商所有。如厂商对本仓库内容有异议，请通过 issue 联系。
+
+## License
+
+[MIT](LICENSE)
