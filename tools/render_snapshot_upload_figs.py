@@ -247,6 +247,15 @@ def fig_pipeline():
         fontsize=8,
         color="#666",
     )
+    ax.text(
+        8.0,
+        0.08,
+        "v3.14.0 起该管线整体移除——本图描述存活期（v2.3.0–v3.12.3）行为",
+        ha="center",
+        fontsize=10,
+        weight="bold",
+        color=C_RED,
+    )
 
     for ext in ("svg", "pdf"):
         fig.savefig(
@@ -256,7 +265,9 @@ def fig_pipeline():
     plt.close(fig)
 
 
-# (label, theme, start_tag, end_tag) — end=None means still present at v3.12.3
+# (label, theme, start_tag, end_tag) — end=None means survived until the v3.14.0 removal
+REMOVAL_TAG = "v3.14.0"
+LAST_LIVE_TAG = "v3.12.3"
 TIMELINE = [
     ("功能存在（管线恒定）", "base", "v2.3.0", None),
     ("开关真实门控上传", "consent", "v2.3.0", "v2.5.0"),
@@ -288,7 +299,7 @@ def fig_timeline(tags):
     for row, (label, theme, start, end) in enumerate(TIMELINE):
         y = len(TIMELINE) - 1 - row
         x0 = idx[start]
-        x1 = idx[end] if end else last
+        x1 = idx[end] if end else idx[LAST_LIVE_TAG]
         ax.broken_barh(
             [(x0 - 0.42, x1 - x0 + 0.84)],
             (y - 0.32, 0.64),
@@ -334,8 +345,25 @@ def fig_timeline(tags):
         fontsize=9,
         framealpha=0.9,
     )
+    ax.axvline(
+        idx[REMOVAL_TAG] - 0.5,
+        color=C_RED,
+        lw=2,
+        ls=(0, (6, 4)),
+        zorder=5,
+    )
+    ax.text(
+        idx[REMOVAL_TAG] - 0.55,
+        len(TIMELINE) - 0.4,
+        "v3.14.0\n整体移除",
+        ha="right",
+        va="top",
+        fontsize=10,
+        weight="bold",
+        color=C_RED,
+    )
     ax.set_title(
-        "快照上传功能边界演化（55 个入库 tag，横轴按版本排序）", fontsize=12, pad=10
+        "快照上传功能边界演化（56 个入库 tag，横轴按版本排序）", fontsize=12, pad=10
     )
     for ext in ("svg", "pdf"):
         fig.savefig(
@@ -350,7 +378,7 @@ def fig_consent(tags):
     last = len(tags) - 1
     xs = list(range(len(tags)))
 
-    effective = [1.0 if i >= idx["v2.6.0"] else 0.0 for i in xs]
+    effective = [1.0 if idx["v2.6.0"] <= i <= idx[LAST_LIVE_TAG] else 0.0 for i in xs]
     display = [0.0 for _ in xs]
 
     fig, ax = plt.subplots(figsize=(14, 4.6))
@@ -375,19 +403,29 @@ def fig_consent(tags):
     )
     ax.axvspan(
         idx["v3.1.0"] - 0.5,
-        last + 0.5,
+        idx[LAST_LIVE_TAG] + 0.5,
         color="#dfe8f5",
         alpha=0.6,
         zorder=0,
     )
     ax.text(
-        (idx["v3.1.0"] + last) / 2,
+        (idx["v3.1.0"] + idx[LAST_LIVE_TAG]) / 2,
         1.5,
         "开关移出管线：恒运行（唯一门=服务端 credential 签发）",
         ha="center",
         fontsize=10,
         weight="bold",
         color="#2c5282",
+    )
+    ax.axvline(idx[REMOVAL_TAG] - 0.5, color=C_RED, lw=2, ls=(0, (6, 4)))
+    ax.text(
+        idx[REMOVAL_TAG] - 0.4,
+        1.62,
+        "v3.14.0 功能族整体移除",
+        ha="right",
+        fontsize=9.5,
+        weight="bold",
+        color=C_RED,
     )
 
     ax.step(
@@ -523,6 +561,15 @@ def fig_visibility():
         ha="center",
         fontsize=9.5,
         color="#444",
+    )
+    ax.text(
+        1.5,
+        -1.2,
+        "（该管线 v3.14.0 起整体移除，矩阵描述存活期 v2.3.0–v3.12.3）",
+        ha="center",
+        fontsize=9.5,
+        weight="bold",
+        color=C_RED,
     )
     ax.set_title("离机字节可见性矩阵（谁实际看到什么形态的数据）", fontsize=12, pad=10)
     for ext in ("svg", "pdf"):

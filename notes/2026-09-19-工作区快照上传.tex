@@ -50,7 +50,7 @@
   \small\textbf{要点}\quad\ignorespaces
 }{\end{mdframed}}
 
-\title{ZCode 工作区快照上传机制\\——基于 55 个发布版本的逆向分析}
+\title{ZCode 工作区快照上传机制\\——基于 56 个发布版本的逆向分析}
 \author{}
 \date{2026 年 9 月 19 日}
 
@@ -63,12 +63,12 @@
 
 自 v2.3.0 起，ZCode 在用户每次发送 prompt 时（后续版本又加入任务终止、wiki 生成、定时任务等事件），会把当前工作区整个目录打成 tar.gz 归档——v3.1.0 起包含完整的 \cid{.git/} 目录——再用一个随机 AES-256 密钥加密、以服务端下发的 RSA 公钥包装该密钥，通过阿里云 OSS 直传至厂商服务端。上传登记经由 OSS callback 完成：包装后的密钥、明文压缩包的 SHA-256 和一组会话归因字段随回调送达服务端，持有对应 RSA 私钥的一方可以解开全部内容。
 
-功能与设置开关的关系经历了三个阶段。v2.3.0–v2.5.0 期间开关真实门控、默认关闭，须用户主动开启。v2.6.0 起默认翻转为开启：只要用户没有显式关过，管线就在运行，而设置界面仍按原始开关值显示为关闭。v3.1.0 起开关被从捕获管线整体移除，是否上传只由登录态、本地工作区类型与服务端是否签发凭证决定——唯一的实质同意门从此位于服务端。在全部 55 个版本中，产品界面从未告知这一行为；设置页唯一相关的文案把它描述为一个纯本地的“索引”功能。
+功能与设置开关的关系经历了三个阶段。v2.3.0–v2.5.0 期间开关真实门控、默认关闭，须用户主动开启。v2.6.0 起默认翻转为开启：只要用户没有显式关过，管线就在运行，而设置界面仍按原始开关值显示为关闭。v3.1.0 起开关被从捕获管线整体移除，是否上传只由登录态、本地工作区类型与服务端是否签发凭证决定——唯一的实质同意门从此位于服务端。在存活期的全部 55 个版本中，产品界面从未告知这一行为；设置页唯一相关的文案把它描述为一个纯本地的“索引”功能。\textbf{v3.14.0（2026-09-19）该功能族被整体移除}：上传管线、credential 端点、两个设置开关、全部索引区 UI 文案、repo-wiki 本地功能本体、glm/zcode.cjs 两枚死导出全部删除，28 个功能指示符归零且无继任端点——同意门问题以“功能不存在”告终（见 \ref{sec:removal} 节）。本报告主体描述 v2.3.0–v3.12.3 存活期行为。
 
 主要结论如下。
 
 \begin{enumerate}
-\item 功能自 v2.3.0 首秀后存活至最新版，实现始终位于 \cid{app/out/host/index.js}；其他 bundle 中的同名符号均为共享 schema 常量与设置键，不存在第二份实现。
+\item 功能自 v2.3.0 首秀，存活区间为 v2.3.0–v3.12.3，实现始终位于 \cid{app/out/host/index.js}；其他 bundle 中的同名符号均为共享 schema 常量与设置键，不存在第二份实现。v3.14.0 整体移除。
 \item 捕获范围持续扩大：v2.x 排除 \cid{.git}，v3.1.0 起根 \cid{.git/} 整树进包并豁免后续全部过滤规则（remote URL 中的 token、reflog、数 MB 的 pack 文件一并外发）；v3.2.0 起嵌套 build 目录由排除改为打包；v3.11.1 起新增 extraManifest，把应用全局配置（settings.behavior 白名单、mcp.json、skills/commands/hooks、memory、subagents、plugins、\cid{~/.zcode/AGENTS.md}；疑似敏感键值改写为 \cid{<redacted>}）与 prompt 附件打进同一个加密归档。
 \item credential 的 GET 请求位于扫描之前：响应中的 \cid{snapshot_id} 充当 tar 根目录名，\cid{public_key} 用于包装 AES 密钥，\cid{max_size} 约束压缩产物上限，没有响应就无包可打。加密产物落盘为 pending 后由同一次捕获的尾部 flush 发出，flush 仅做内存查表，不再产生 HTTP 请求。
 \item 客户端无从得知服务端是否接收：OSS callback 的响应体从不被解析，为服务端拒收准备的三个分支自首个版本起即为不可达代码。
@@ -76,7 +76,7 @@
 \item v2.x 中，工作区若含 submodule 或未跟踪的嵌套仓库，扫描会对目录项采样并触发 EISDIR，整个捕获静默中止——该系列对这类仓库从未成功上传过，v3.1.0 起修复。
 \item 磁盘状态自 \cid{~/.zcode/v2/repo-snapshots/}（v2.3.0–v3.1.3）迁至 \cid{~/.zcode/v2/checkpoints/}（v3.2.0 起，与 GitCheckpointStore 共用根目录），状态文件历经七个结构版本。
 \item 披露报告的核心指控对 v3.x 成立；v2.3.0–v2.5.0 不成立；v2.6.0–v2.13.0 半成立。报告中若干细节与语料不符，例如 credential 请求实为 GET 而非 POST，逐条裁决见第 \ref{sec:adjudication} 节。
-\item repo-wiki 是纯本地功能，与上传管线没有数据通路，快照仅搭用它的触发器时机。
+\item repo-wiki 是纯本地功能，与上传管线没有数据通路，快照仅搭用它的触发器时机；v3.14.0 与管线同版移除，说明它在产品中始终与快照绑定。
 \end{enumerate}
 
 \section{术语表}
@@ -163,7 +163,7 @@ transport & 客户端 IP、时序、blob 大小；不带 Authorization、x-reque
 \section{版本演化时间线}
 
 \begin{takeaway}
-55 个版本分三个 era：v2.3.0 首秀为诚实的 opt-in，v2.6.0 默认翻转为 opt-out（界面仍显示关），v3.1.0 起开关被移出管线成为纯装饰——此后是否上传只由登录态、workspace 类型与服务端 credential 签发决定。
+56 个版本分四个 era：v2.3.0 首秀为诚实的 opt-in，v2.6.0 默认翻转为 opt-out（界面仍显示关），v3.1.0 起开关被移出管线成为纯装饰——此后是否上传只由登录态、workspace 类型与服务端 credential 签发决定；v3.14.0 整体移除。
 \end{takeaway}
 
 \subsection{首秀判定与实现载体}
@@ -179,7 +179,7 @@ v2.2.0 时 \cid{upload-credential}、\allowbreak\cid{captureBeforePrompt}、\all
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=\textwidth]{assets/snapshot-upload-timeline.pdf}
-\caption{功能边界演化：横轴为 55 个入库 tag 按版本排序，颜色区分主题。}
+\caption{功能边界演化：横轴为 56 个入库 tag 按版本排序，颜色区分主题；v3.14.0 处为整体移除边界。}
 \label{fig:timeline}
 \end{figure}
 
@@ -219,6 +219,7 @@ v3.11.1 & extraManifest 上线：\verb+extra-meta/{manifest,delta}.json+ 与 \ci
 v3.12.1 & subagents 的 \cid{thoughtLevel} 字段来源改 \cid{modelSelection.options.reasoningLevel}。 \\
 v3.12.2 & glm/zcode.cjs 导出面扩张（\cid{REPO_SNAPSHOT_*} 常量与两个 consent helper，全部零调用）；对象上传 fetch 改 undici 并加 \cid{redirect:"error"}。 \\
 v3.12.3 & 快照相关区域与 v3.12.2 字节一致；新增 pack 级 abort（gzip 流 destroy）；新增 \cid{readPages}/\cid{regenerateFailedPages}（后者不触发快照）。 \\
+v3.14.0 & \textbf{整体移除}：sidecar/captureBeforePrompt/credential GET/tar/AES/RSA/OSS PostObject/callback/pending/state/GC/配额/intent 调度器全清零（feature 指示符 28→0）；\cid{/api/v1/snapshot/upload-credential} 端点消失且无继任；repo-wiki 本地功能本体同版移除；\cid{repoSnapshotIndexingEnabled}/\allowbreak\cid{optimizeAgentExperienceEnabled} 设置键与 \cid{settings.indexing} 全系 UI 文案删除；glm/zcode.cjs 死导出删除；scheduler bundle 2.1MB→1.0MB。残留仅卫生字面量：诊断导出排除表 \cid{_L} 仍列历史目录名，ARMS 路径段白名单仍含 \cid{snapshot}/\cid{upload-credential} 段（\ref{sec:removal} 节）。 \\
 \end{longtable}
 
 \section{捕获范围}
@@ -522,6 +523,8 @@ v2.x 仅 prompt 发送触发；v3.x 增至五类直接触发（prompt、steer、
 \end{takeaway}
 \label{sec:triggers}
 
+本节描述存活期（v2.3.0–v3.12.3）行为；v3.14.0 全部触发器随 sidecar 移除（\ref{sec:removal} 节）。
+
 \subsection{v2.x：单触发}
 
 唯一上传触发是 \cid{RepoSnapshotSidecarService.captureBeforePrompt}，在 \cid{runPrompt} 内 fire-and-forget 调用。入口面随版本扩大：\cid{acpService.sendPrompt}（v2.3.0 起）、bots \cid{sendPromptInBackground}（v2.3.0 起）、task runtime 命令队列（v2.4.0 起）、session-mailbox \cid{wakeSession}（v2.12.0 起）。\cid{steerPrompt} 不触发。没有 timer、cron、file-watch、IPC、启动或退出触发，也没有 debounce，仅靠 \cid{runsByWorkspaceKey} 按工作区串行。
@@ -574,9 +577,11 @@ function isRepoSnapshotIndexingEffectivelyEnabled(settings) {
 
 阶段三（v3.1.0–v3.12.3），开关装饰化。\cid{RepoSnapshotSidecarService}\allowbreak 类体内对两个 flag 零引用（逐版枚举确认）。\cid{repoSnapshotIndexingEnabled}\allowbreak 的全部”消费点”只剩 schema 声明、\allowbreak\cid{normalizeSettingsPatch}\allowbreak 记账、设置页显示（v3.x 绑 \cid{enabled && userConfigured} 复合谓词——被静默开启的 flag 显示 OFF）以及 v3.11.1 起的 global-configs 白名单（取值被打进快照 payload）。捕获路径的实际前置条件全是运行时态：登录 token 存在、\cid{workspaceIdentity} 为空（remote workspace 永不捕获）、credential 非 null（\cid{data:null} 即中止——全版本仅存的实质同意门）、v3.11.1 起磁盘配额、产物不超过 maxSize。写入方审计显示，两个 flag 的唯一写入方是 renderer 开关与 \cid{normalizeSettingsPatch}，不存在任何自动开启路径。
 
+阶段四（v3.14.0），开关随功能一并删除。\cid{repoSnapshotIndexingEnabled}/\allowbreak\cid{userConfigured}/\allowbreak\cid{optimizeAgentExperienceEnabled} 三个设置键及其 schema 声明、\cid{settings.indexing}/\allowbreak\cid{settings.optimizeAgentExperience} 全系 UI 字典、renderer 开关组件全部归零（rg 0 命中）——同意门问题以“功能不存在”告终，而非以“门被修好”告终（\ref{sec:removal} 节）。
+
 \subsection{optimizeAgentExperienceEnabled：死配置}
 
-v3.2.0 首秀时 zod 默认 true，v3.2.5 翻为默认 false 并加迁移标记。全部 55 个版本中该键没有任何功能消费点，只出现在 schema、迁移逻辑与隐私页开关文案（“Allow us to use your conversations to improve the Agent experience. We protect your data privacy and security.”）里——是死配置或占位。
+v3.2.0 首秀时 zod 默认 true，v3.2.5 翻为默认 false 并加迁移标记。全部 55 个存活版中该键没有任何功能消费点，只出现在 schema、迁移逻辑与隐私页开关文案（“Allow us to use your conversations to improve the Agent experience. We protect your data privacy and security.”）里——是死配置或占位；v3.14.0 键随功能删除。
 
 \subsection{其余门控}
 
@@ -594,16 +599,18 @@ repo-wiki 是纯本地功能，已全链核实：存储为 \cid{repo-wiki/}\allo
 
 所谓”索引”本体就是这次上传：全语料对 \cid{trigram}、\cid{buildIndex}、\cid{indexFiles}、\cid{grepIndex}、\allowbreak\cid{instantGrep*} 零命中（ripgrep/ugrep 命中是远程 workspace 的资源包）；\cid{instantGrepIndexingEnabled}\allowbreak 与 \cid{repoSnapshotIndexingEnabled}\allowbreak 均无本地功能消费点——“Index new folders”“instant grep”“All data is stored locally”这些文案没有任何本地实现支撑（可能服务端索引由上传驱动，文案与实现不符，见 \ref{sec:open} 节）。wiki 自己的 manifestHash 是 \cid{getWorkspaceOverview()} 本地扫描的陈旧性判据，与快照的 manifestHash 同名不同源。
 
+v3.14.0 起本节整体成为历史：repo-wiki 本地功能本体（wikiService、\cid{captureTaskCompleteUpdate}、\allowbreak\cid{generate*}、\allowbreak\cid{LocalWorkspaceRepoReader}、\allowbreak\cid{repo_wiki} 存储路径）与快照管线同版移除——\cid{repo-wiki} 字面量仅残留在诊断导出排除表 \cid{_L} 的目录名单里（\ref{sec:removal} 节）。
+
 \section{披露、日志与遥测}
 \label{sec:disclosure}
 
 \begin{takeaway}
-55 个版本 UI 零披露；诊断导出刻意排除快照目录；ARMS 遥测只见 credential 端点 host+path。日志如实记录但用户不可见——拨动装饰开关本身被遥测。
+存活期 55 个版本 UI 零披露；诊断导出刻意排除快照目录；ARMS 遥测只见 credential 端点 host+path。日志如实记录但用户不可见——拨动装饰开关本身被遥测。v3.14.0 起连“未披露”的对象本身都不存在了。
 \end{takeaway}
 
-结论是全部 55 个版本的 UI 零披露：没有 label、toast、dialog、tooltip、onboarding consent、隐私声明、EULA 或设置描述告知工作区被快照加密上传。逐版 consent 面审计中唯一沾边的文案均不相关（conversationShare 警告、feedback 主动上传、Chrome-profile adminConsent、支付 ToS、插件 privacyPolicy）。
+结论是存活期全部 55 个版本的 UI 零披露：没有 label、toast、dialog、tooltip、onboarding consent、隐私声明、EULA 或设置描述告知工作区被快照加密上传。逐版 consent 面审计中唯一沾边的文案均不相关（conversationShare 警告、feedback 主动上传、Chrome-profile adminConsent、支付 ToS、插件 privacyPolicy）。
 
-四个 era 的唯一用户可见面：
+五个 era 的唯一用户可见面：
 
 \begin{table}[htbp]
 \centering\small
@@ -615,11 +622,12 @@ A & v2.2.0 & 无（功能缺席） & 无 \\
 B & v2.3.0–v2.13.0 & 单开关“Index Repositories for Instant Grep”+BETA & 无 \\
 C & v3.1.0–v3.1.3 & 双开关“Index new folders…<50,000 files”与“instant grep (Beta)” & 无；instantGrep 描述含“All data is stored locally.”；repoWiki 删除框首现“OSS repository upload records…” \\
 D & v3.2.0–v3.12.3 & 同上，另加“Improve experience…protect your data privacy” & 无；上述两句持续 \\
+E & v3.14.0 & 无（索引区 UI 与两个开关整体删除） & —（功能不存在，披露问题终结于移除） \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-证据锚：era B 字典键 \cid{settings.indexing.repoTitle}/\allowbreak\cid{settings.indexing.beta}/\allowbreak\cid{settings.indexing.}\allowbreak\cid{repoDescription}（v2.3.0 与 v2.13.0 的 renderer bundle；zh-CN 字典里 repoTitle 为英文原文，非误植）；era C 字典与组件在 v3.1.0 与 v3.12.3 的 renderer 资源中；”OSS 仓库上传记录/OSS repository upload records”字面量仅见于\allowbreak \cid{repoWiki.deleteConfirm}\allowbreak\cid{Description}；era D 文案在 \verb+settings.optimizeAgent+\allowbreak\verb+Experience{,Description}+（v3.10.0 起带 analytics envelope）。
+证据锚：era B 字典键 \cid{settings.indexing.repoTitle}/\allowbreak\cid{settings.indexing.beta}/\allowbreak\cid{settings.indexing.}\allowbreak\cid{repoDescription}（v2.3.0 与 v2.13.0 的 renderer bundle；zh-CN 字典里 repoTitle 为英文原文，非误植）；era C 字典与组件在 v3.1.0 与 v3.12.3 的 renderer 资源中；”OSS 仓库上传记录/OSS repository upload records”字面量仅见于\allowbreak \cid{repoWiki.deleteConfirm}\allowbreak\cid{Description}；era D 文案在 \verb+settings.optimizeAgent+\allowbreak\verb+Experience{,Description}+（v3.10.0 起带 analytics envelope）。era E（v3.14.0）：上述全部字典键、组件与文案 rg 0 命中——不是改文案而是整段删除。
 
 三个加重事实：其一，“All data is stored locally.”挂在 instantGrep 开关下，而该开关没有任何本地实现；其二，v3.x 的显示双条件使被静默开启的 flag 显示为 OFF；其三，“Improve experience”是唯一 consent 形状的文案，但作用域声明为 conversations。
 
@@ -635,7 +643,7 @@ D & v3.2.0–v3.12.3 & 同上，另加“Improve experience…protect your data 
 \label{sec:adjudication}
 
 \begin{takeaway}
-披露报告核心指控对 v3.x 成立；v2.3.0–v2.5.0 不成立（当时是诚实的 opt-in）；v2.6.0–v2.13.0 半成立。若干技术细节与语料不符。
+披露报告核心指控对 v3.x 成立；v2.3.0–v2.5.0 不成立（当时是诚实的 opt-in）；v2.6.0–v2.13.0 半成立。若干技术细节与语料不符。裁决对象为存活期 v2.3.0–v3.12.3；v3.14.0 起机制不存在，各条不再适用（\ref{sec:removal} 节）。
 \end{takeaway}
 
 \begin{longtable}{@{}p{6.2cm}p{9.0cm}@{}}
@@ -656,7 +664,7 @@ toggle 不 gate capture/upload & \textbf{3.x 成立}（装饰化）；\textbf{v2
 状态目录 \cid{~/.zcode/v2/checkpoints} & \textbf{$\geq$v3.2.0 成立}；v2.x–v3.1.x 实为 \cid{repo-snapshots/} \\
 status JSON：kind/failureCount/lastCompressedSize & \textbf{部分成立}：\cid{kind} 自始有；\cid{failureCount} 属 v3.2.1、\cid{lastCompressedSize} 属 v3.2.3——报告描述的是 v3.2.3 之后的形态 \\
 extra manifest（哈希全局配置进上传） & \textbf{v3.11.1+ 成立}（global-configs 加 references；settings.behavior 白名单含两个开关取值） \\
-无任何用户披露 & \textbf{成立}（全部 55 版 UI 零披露；本地日志如实记录“upload accepted”但不对用户展示） \\
+无任何用户披露 & \textbf{成立}（存活期全部 55 版 UI 零披露；本地日志如实记录“upload accepted”但不对用户展示） \\
 \end{longtable}
 
 \section{能力边界}
@@ -676,6 +684,35 @@ zcode 服务端掌握全部主动：它可以通过 \cid{data:null} 拒发 crede
 
 用户从 UI 和文件系统能做的只有两件事：拨动设置开关（v2.6.0 起这只改显示不改行为，v3.1.0 起连行为都不影响），以及在 v3.11.1 之后把自己的 consent 取值经 global-configs 一并打进快照 payload 发给服务端。用户无法从任何界面、文档或诊断导出得知此功能存在，也无法用任何客户端手段关闭上传——没有环境变量门、没有功能开关，唯一有效的旁路是退出登录，或迁往 remote workspace（\cid{workspaceIdentity} 非空即不捕获）。
 
+v3.14.0 起上述客户端侧机制全部不存在：无代码可抓 credential、无 artifact 可落盘、无开关可拨；服务端是否保留历史已上传数据、是否另开通道，语料不可判（\ref{sec:open} 节未决项）。
+
+\section{v3.14.0：整体移除与遗留面}
+\label{sec:removal}
+
+\begin{takeaway}
+v3.14.0 把整个功能族连根移除——不只是上传管线，而是“快照 + 索引 + repo-wiki”一整族；28 个功能指示符归零，无继任端点。残留只有卫生字面量（诊断排除表目录名、ARMS 路径段白名单）与独立的 GitCheckpointStore/feedback 管线。移除动机语料外不可判。
+\end{takeaway}
+
+v3.14.0（2026-09-19 发布，距 v3.12.3 仅 3 天）的移除逐项盘点如下，全部经 \cid{extracted/3.14.0/app/} 全树 rg 核实，28 指标矩阵见 \cid{notes/snapshot-tracking.json}。
+
+\textbf{端点}：\cid{/api/v1/snapshot/upload-credential} 字面量 0 命中；全树 \verb+/api/v*/snapshot*+ 0 命中，无继任端点（新版仅新增 \verb+/api/v1/marketing/touch{,/action}+ 等无关端点）。\cid{/api/v1/event/report} 为唯一同域残留通用端点。
+
+\textbf{管线代码}：\cid{captureBeforePrompt}/\allowbreak\cid{repoSnapshot*}（67→0）/\allowbreak\cid{PostObject}/\allowbreak AES-256-CTR（仅剩 ssh2 node\_module 命中）/\allowbreak\cid{rsa-oaep}/\allowbreak\cid{publicKeySpkiPem}/\allowbreak\cid{keyWrapAlgorithm}/\allowbreak\cid{key_version}/\allowbreak\cid{extraManifest}/\allowbreak\cid{extra_manifest}/\allowbreak\cid{snapshot_manifest}/\allowbreak\cid{lastCompressedSize}/\allowbreak\cid{isRepoSnapshotIndexing}\allowbreak\cid{EffectivelyEnabled} 全部 0 命中——扫描、过滤、tar、加密、pending、state.json 七 era、GC、磁盘配额、intent 调度器无一残留。
+
+\textbf{触发器}：T1–T5 随 \cid{RepoSnapshotSidecarService} 整体消失（reserve/activate/schedule callsite 0 命中）；\cid{sendConversationCommandV4} 包络本体保留但快照占槽代码删除。cron/OffPeakRun 的 automation 引擎保留（那是独立功能，曾只是注入器）。
+
+\textbf{设置与 UI}：\cid{repoSnapshotIndexingEnabled}/\allowbreak\cid{repoSnapshotIndexingUserConfigured}/\allowbreak\cid{optimizeAgentExperienceEnabled} 三个键及 schema 声明 0 命中；\verb+settings.indexing.*+/\allowbreak\verb+settings.optimizeAgentExperience*+/\allowbreak instantGrep/“All data is stored locally”/“OSS repository upload records”/“Improve experience” 全部 UI 文案 0 命中（存活期同类文案合计 435 命中→1）；renderer 索引区组件与隐私开关消失。
+
+\textbf{repo-wiki 本体}：wikiService/\allowbreak\cid{captureTaskCompleteUpdate}/\allowbreak\cid{generate*}/\allowbreak\cid{refreshExistingWiki}/\allowbreak\cid{LocalWorkspaceRepoReader}/\allowbreak\cid{repo_wiki} 存储路径 0 命中——这个“纯本地”功能与上传管线同版移除，说明它在产品里始终与快照绑定存在。
+
+\textbf{glm/zcode.cjs 死导出}：\cid{isRepoSnapshotIndexingSwitchChecked}/\allowbreak\cid{resolveOptimizeAgentExperienceEnabled} 删除——v3.12.2 才加的 staged API surface 未接线即夭折。
+
+\textbf{体积}：\cid{app/out/scheduler/index.js} 2,108,514B→1,000,385B（−53\%），automations cron 引擎保留。
+
+\textbf{残留（卫生字面量，无功能）}：诊断导出排除表 \verb+_L=["agent-config","certs","repo-snapshots","repo-wiki","sessions","session-bindings","checkpoints"]+ 仍列历史目录名；ARMS 遥测路径段白名单仍含 \cid{snapshot}/\cid{upload-credential}/\cid{workspace-bridge} 段；\cid{GitCheckpointStore} 本地撤销功能保留并继续使用 \cid{checkpoints/} 目录——老安装遗留的 \cid{state.json}/pending \cid{.enc} 与其共址，未见针对遗留快照文件的清理代码（孤儿 \cid{.enc} 原地残留，不再被读也不再被传）；feedback 附件 OSS 管线完整保留（\cid{/feedback/attachment/upload-credential} + x-oss 表单 + \verb+----zcode-feedback-+ 边界——用户主动发起的另一条管线，勿混淆）。
+
+\textbf{边界与动机}：语料内移除边界为 v3.12.3→v3.14.0；3.13.x 在 linux-x64 不存在（mac/win 同路径模式亦 404，不排除他平台存在过该线）。移除动机在语料外不可判——是披露响应、产品下线还是服务端侧迁移，二进制无证据；能确认的只有“客户端侧机制已不存在”。
+
 \section{未决问题与已知边界行为}
 \label{sec:open}
 
@@ -691,6 +728,7 @@ zcode 服务端掌握全部主动：它可以通过 \cid{data:null} 拒发 crede
 \item 裸归因字段以明文进 OSS 表单是有意设计还是默认泄漏，不可判。
 \item \cid{workspaceIdentity} 的精确字符串格式（SSH remote 序列化？）未提取，只确认为非空 opaque 串并经 prompt envelope 与 agent 环境变量传播。
 \item v2.x 的诊断导出面未查；v3.12.3 个别 import 绑定未追到导出名（低风险）。
+\item v3.14.0 移除的若干不可判项：动机（披露响应/产品决策/服务端迁移）语料外不可判；服务端是否保留历史上传数据、是否另开客户端外通道不可判；\cid{~/.zcode/v2/checkpoints/} 老遗留 state/pending 无清理代码但亦不再被读；3.13.x 若在他平台存在过则移除边界可能更早，语料内按 v3.14.0 记。
 \end{itemize}
 
 \subsection{已知边界行为与缺陷}
@@ -712,12 +750,12 @@ zcode 服务端掌握全部主动：它可以通过 \cid{data:null} 拒发 crede
 \section{方法与复核方式}
 
 \begin{takeaway}
-语料为 55 个版本的 extracted 树快照，逐版 tag 经 bare git 比对；v2.x 代码未压缩可直接读，v3.x 为 minified 单行需经 \cid{i(fn,"name")} 注解还原。全部断言可在语料中复核。
+语料为 56 个版本的 extracted 树快照，逐版 tag 经 bare git 比对；v2.x 代码未压缩可直接读，v3.x 为 minified 单行需经 \cid{i(fn,"name")} 注解还原。全部断言可在语料中复核。
 \end{takeaway}
 
-语料为 ZCode linux-x64 全部 55 个入库版本（v2.2.0–v3.12.3；3.7.1/.2/.4 三版发布后从 CDN 撤下、按 published-but-unrecoverable 记账，版本边界用相邻可恢复版桥接）。每个版本的安装包经解包后以 \cid{v<tag>} 形式快照在语料 git 仓中。
+语料为 ZCode linux-x64 全部 56 个入库版本（v2.2.0–v3.14.0；3.7.1/.2/.4 三版发布后从 CDN 撤下、按 published-but-unrecoverable 记账，版本边界用相邻可恢复版桥接；3.13.x 在 linux-x64 语料中不存在，manifest 从 3.12.3 直跳 3.14.0）。每个版本的安装包经解包后以 \cid{v<tag>} 形式快照在语料 git 仓中。
 
-分析分两层：其一是对 55 个 tag 做 28 项指示符的全量矩阵，用于定位功能首秀与行为边界；其二是按主题对 bundle 做精读还原，v2.x 代码未压缩、v3.x 为 minified 单行（原始标识符经 \cid{s(fn,"name")}、\cid{i(fn,"name")}、\cid{a(fn,"name")} 注解恢复）。所有版本边界均按真实 tag 列表逐一核实——不存在的 tag（v3.2.0/v3.6.0/v3.7.0/v3.8.0/v3.9.0/v3.11.0）不计入零命中。
+分析分两层：其一是对 56 个 tag 做 28 项指示符的全量矩阵，用于定位功能首秀与行为边界；其二是按主题对 bundle 做精读还原，v2.x 代码未压缩、v3.x 为 minified 单行（原始标识符经 \cid{s(fn,"name")}、\cid{i(fn,"name")}、\cid{a(fn,"name")} 注解恢复）。所有版本边界均按真实 tag 列表逐一核实——不存在的 tag（v3.2.0/v3.6.0/v3.7.0/v3.8.0/v3.9.0/v3.11.0）不计入零命中。
 
 文中每条断言均可复核，例如：
 
