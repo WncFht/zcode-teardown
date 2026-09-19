@@ -12,7 +12,7 @@
 - **捕获范围单向 widening**：v2.x 排除 `.git` → v3.1.0 起根 `.git/` 整树强打且豁免 secret/大小/二进制过滤（`.git/config` 里的 remote token、reflog、多 MB pack 全进包）→ v3.2.0 起嵌套 build 目录从排除改为打包 → v3.11.1 起 `extraManifest` 把应用全局配置（settings.behavior 白名单、mcp.json、skills/commands/hooks（含 shell 命令串）、memory、subagents、plugins、`~/.zcode/AGENTS.md`，敏感键值 `<redacted>`）与 prompt 附件打进同一加密 tar。
 - **开关三阶段**：v2.3.0–v2.5.0 真 opt-in；v2.6.0–v2.13.0 `isRepoSnapshotIndexingEffectivelyEnabled` 默认取反（显示 OFF 实际在跑，显式 opt-out 才停）；v3.1.0 起开关装饰化。v3.11.1 起两个 toggle 取值反而被打进快照 payload。
 - **触发器**：v2.x 仅 `captureBeforePrompt`（每次 prompt）；v3.x = 5 类直接触发 + 2 类间接注入（§6），v3.6.1 起统一经 intent 调度器（32 深、120s 超时）。无 timer/IPC/startup-flush；pending 只在下一次捕获尾部 flush。
-- **管线自首秀未变**：手写 ustar+pax tar.gz → AES-256-CTR（nonce 前缀密文，无认证）→ RSA-OAEP-SHA256 wrap → **GET** `https://zcode.z.ai/api/v1/snapshot/upload-credential?workspace_id=<sha256[:12]>`（非披露所称 POST；v3.1.0 起带 X-* 指纹头）→ OSS PostObject V4 → OSS callback 投递 `${encrypted_aes_key}`/`${checksum}`（明文 tar.gz 的 sha256 离机）/`x:*` 归因。
+- **管线自首秀未变**：捕获路径**先取 credential**（**GET** `https://zcode.z.ai/api/v1/snapshot/upload-credential?workspace_id=<sha256[:12]>`，非披露所称 POST；v3.1.0 起带 X-* 指纹头）——响应的 `snapshot_id` 当 tar 根目录名、`public_key` 做 RSA wrap——再扫描打包：手写 ustar+pax tar.gz → AES-256-CTR（nonce 前缀密文，无认证）→ RSA-OAEP-SHA256 wrap → pending 落盘 → OSS PostObject V4 → OSS callback 投递 `${encrypted_aes_key}`/`${checksum}`（明文 tar.gz 的 sha256 离机）/`x:*` 归因。
 - **协议上客户端永远不知道服务端是否拒绝**：OSS callback 的响应体从不解析，`base_not_found`/`base_invalid`/`hash_mismatch` 三个处理分支自 v2.3.0 起就是不可达死代码。
 - **delta 只比 `path+sizeBytes`**：等长改写对增量不可见；扫描无文件数/字节上限（"Index new folders <50,000 files" 文案无实现支撑——本地索引引擎不存在，"索引"本体就是这次上传）。
 - **v2.x 的隐性故障**：workspace 含 submodule 或未跟踪嵌套 repo 时 `readSample` 撞 EISDIR，整个捕获静默中止——v2.x 快照对这类仓库从未成功过；v3.1.0 修复。
@@ -22,39 +22,13 @@
 
 ## 1. 端到端管线
 
-```text
-触发 (§6): prompt-send / steer(≤v3.3.6) / v4 命令 / 任务终止 / wiki 生成 / cron / OffPeak
-    │
-    ▼  captureBeforePrompt  (v3.6.1+ 经 intent 调度器：32 深 / 120s 超时 / 5s settle)
-枚举：spawn("git",["ls-files","--cached","--others","--exclude-standard","-z"])
-    │  失败 (spawn error/非零退出) → walkFiles 目录遍历回落
-    ▼
-过滤 (§3): symlink→弃 | .git 段→v2.x 弃/v3.x 强制收 (豁免后续全部规则)
-    │        | node_modules/.cache/.turbo段 | build 输出段 (3.2.0 起仅顶层)
-    │        | secret 基名/后缀/子串 | >1MiB | 8KiB 采样含 NUL→binary
-    ▼
-meta/prompt.json + meta/manifest.json (+meta/delta.json 增量时)
-    │  + extra-meta/* + extra-files/* (v3.11.1+)
-    ▼  ustar+pax tar (根目录=<snapshot_id>/) → createGzip()  (§4)
-AES-256-CTR: 密文 = nonce(16B)‖ct；dataKey(32B) 经服务端 SPKI 公钥
-    │         RSA-OAEP-SHA256 wrap → encryptedDataKey        (§5.1)
-    ▼
-GET <origin>/api/v1/snapshot/upload-credential?workspace_id=sha256(wsKey)[:12]
-    │  Bearer JWT (+v3.1.0起 X-* 指纹头/x-request-id；v3.6.1起15s超时)  (§5.2)
-    ▼  响应: {oss:{host,path,policy,x_oss_*}, encryption:{public_key,key_version},
-    │         callback:{url,body,content_type}, snapshot:{snapshot_id,base_snapshot_id?}, max_size?}
-    ▼
-POST multipart → oss.host  (OSS PostObject V4；file=repo-snapshot.tar.gz.enc
-    │  + 表单字段 + bare 归因字段 + callback=base64{callbackUrl,callbackBody,callbackBodyType})
-    ▼  OSS 服务端把 callbackBody 回传 callbackUrl (服务端↔服务端，响应体客户端不读)
-callbackBody: update_type=full|incremental, checksum=sha256:<明文 tar.gz sha256>,
-    encrypted_aes_key=<wrap 后 AES key>, x:base_snapshot_id, x:<归因字段>
-    │
-    ▼
-state.json: lastAcceptedManifest{Hash,Path} → 下次捕获可发 increment (§4.5)
-```
+![端到端管线：本机 / 网线 / 服务端三区](assets/snapshot-upload-pipeline.svg)
+
+顺序有一个反直觉点：**credential GET 在捕获路径很前面**——`captureBeforePromptUnsafe` 顶部 token→workspaceKeyHash→`getUploadKey`（缓存未命中才真发 HTTP），然后才扫描枚举；因为 tar 根目录名=credential 下发的 `snapshot_id`、AES wrap 用其 `public_key`、gzip 上限吃其 `max_size`，没有响应就没法打包。打包加密产物落盘为 pending；同次捕获尾部的 flush 用 pending 里的 `uploadCredentialHandle` 做**内存查表**取回同一个 credential 组 POST——flush 本身不发 HTTP（v3.6.1+ handle 死/重启 → `key_expired` 丢弃，等下一次捕获重取）。各步骤细节按 §3–§5 展开。
 
 ### 1.1 离机字节清单（谁看到什么）
+
+![离机字节可见性矩阵](assets/snapshot-upload-visibility.svg)
 
 **zcode API**（credential GET，`v3.12.3:app/out/host/index.js` `qve`/`Wn` + `CXe`/`xXe`）：
 
@@ -63,7 +37,7 @@ state.json: lastAcceptedManifest{Hash,Path} → 下次捕获可发 increment (§
 | URL query         | `workspace_id` = `sha256(workspaceIdentity‖workspacePath)[:12]`——稳定 48-bit workspace 假名，串联同一仓库全部上传                                                                                                                                                 |
 | `Authorization`   | `Bearer <zcodeJwtToken ?? accessToken>`——完整用户身份                                                                                                                                                                                                             |
 | 指纹头（v3.1.0+） | `User-Agent: ZCode/<ver>`、`HTTP-Referer: <origin>`、`X-Title: Z Code@electron`、`X-ZCode-App-Version`、`X-Platform`、`X-Release-Channel?`、`X-Client-Language`、`X-Client-Timezone`、`X-Os-Category`、`X-Os-Version?`、`X-Device-Mid?`、`x-request-id: <uuidv4>` |
-| transport         | 客户端 IP、TLS、请求时序（每次捕获一发；handle 过期时 flush 再发）                                                                                                                                                                                                |
+| transport         | 客户端 IP、TLS、请求时序（**缓存未命中时每捕获一发**；flush 是内存查表不发 HTTP，credential 复用见 §5.2）                                                                                                                                                         |
 
 **OSS host**（PostObject multipart，`uploadPostObject`/`idt`）：
 
@@ -76,11 +50,30 @@ state.json: lastAcceptedManifest{Hash,Path} → 下次捕获可发 increment (§
 
 **从不上线**：用户 profile id（`resolveUserId` v3.2.0 起死代码）、workspacePath 明文（只有其哈希）、`snapshot_id` 明文（只存在于密文内 tar 根目录名）。ARMS 遥测另能看到 credential 调用的 host+path 与成败/时延（query 被剥，§10）。
 
+### 1.2 名词速查
+
+| 名词                                | 实质                                                                                                                                     |
+| ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `snapshot_id`                       | 服务端签发的本次快照编号；同时充当 tar 根目录名，明文只出现在 credential 响应与密文内部                                                  |
+| `base_snapshot_id`                  | 服务端认可的上次快照编号；只做 increment 门控与 `x:` 归因回显——**diff base 实际由客户端本地 manifest 决定**（§4.4）                      |
+| `workspaceKey`                      | `workspaceIdentity?.trim() ‖ workspacePath`；本地键，不上线                                                                              |
+| `workspaceKeyHash` / `workspace_id` | `sha256(workspaceKey)[:12]`——48-bit workspace 假名，credential URL query 与状态目录名共用                                                |
+| `manifestHash`                      | `sha256(canonicalJson({workspaceKey, files[{path,sizeBytes}]}))`——增量判据与 pending 文件名的第一段                                      |
+| `uploadKey`                         | credential 响应规范化的本地对象（snapshotId + SPKI 公钥 + keyId + maxSizeBytes? + handle?）——打包所需的三大输入全来自它                  |
+| `uploadCredentialHandle`            | v3.6.1+ 内存 UUID（1h TTL）；pending 落盘只存 handle 不存 credential 本体——进程重启后必 `key_expired`                                    |
+| `groupId`（pending 语境）           | `${manifestHash}.${createdAt}`（v3.11.1 起中段插 `extraManifestHash`）——pending/envelope 文件名；与 extraFiles 的组名 groupId 同名不同义 |
+| `pending`                           | 已加密待传产物（`.enc` + `.envelope.json` + manifest + uploadKey）；唯一 drain 是下一次捕获尾部的 flush，无 startup/周期 flush           |
+| `x:` 前缀键                         | callbackBody 内的归因命名空间，由归因字段经 `x:${k}` 映射生成；同名值同时以 bare 表单字段明文给 OSS                                      |
+
 ## 2. 首秀、载体与演化时间线
 
 **首秀判定**：v2.2.0 时 `upload-credential`/`captureBeforePrompt`/`repoSnapshot`/`repo-snapshot` 全部 0 命中（`tmp/lane-snap-m1/matrix-capture.json`、`tmp/lane-snap-m2/matrix-crypto.json` 逐版计数）；`checkpoints`/`snapshot`/`aliyuncs`/`aes-256-ctr` 在 v2.2.0 的命中均为无关噪音——`checkpoints` 是已有的 GitCheckpointStore 本地 git 回滚（`refs/zcode/checkpoints/<wsHash>/<id>`），`aliyuncs` 是 Qwen provider 端点 `dashscope.aliyuncs.com`，`snapshot` 命中全是 git-diff 快照类型。v2.3.0 首秀即完整形态：`app/out/host/index.js` 内嵌 `// ../services/src/repo-snapshot/*.ts` esbuild 源文件 banner，模块清单（v2.3.0 行号）：`repoSnapshotArtifact.ts` ~49467、`repoSnapshotHasher.ts`/`repoSnapshotCanonicalJson.ts` ~49735、`repoSnapshotPaths.ts` ~49766、`repoSnapshotFilter.ts` ~49800、`repoSnapshotScanner.ts` ~49857、`repoSnapshotSidecarService.ts` ~49990、`repoSnapshotStateRepo.ts` ~50120、`repoSnapshotUploadCredentialDiagnostics.ts` ~50214、`repoSnapshotUploadClient.ts` ~50265、`repoSnapshotUploadWorker.ts` ~50501；共享 schema 常量在 `v2.3.0:app/out/host/chunk-5KQASS3D.js:16656`。
 
 **载体**：全 55 版实现只在 `app/out/host/index.js`——v2.x `app/out/main/index.js` 仅留 banner 注释（代码被 tree-shake，v2.13.0 0 处实例化）；v3.x 里 `/snapshot/upload-credential` 在 main/scheduler 的命中均为共享端点常量（另有无关的 `/feedback/attachment/upload-credential`）；`RepoSnapshotSidecarService`/`captureBeforePrompt` 在 scheduler/main 0 命中；preload/renderer/glm 命中全是共享 schema 常量与设置键（x6 穷举核实无第二实现）。sidecar 自 v2.3.0 起在 host bootstrap 无条件实例化（v2.3.0 `:50694`）。
+
+下图把 17 条功能边界按主题画在 55 个入库 tag 的版本轴上，随后是逐版详表：
+
+![功能边界演化时间线](assets/snapshot-upload-timeline.svg)
 
 | 版本       | 变化                                                                                                                                                                                                                                                                                                                                                                                  |
 | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -255,13 +248,25 @@ tar 根目录 = **服务端签发的 `snapshot_id`**（`v2.3.0:app/out/host/inde
 
 v2.x：纯本地——`lastAcceptedManifestHash && lastAcceptedManifestPath` 且 `readAcceptedBaseManifest` 复算 manifestHash 通过 → `kind="increment"`，否则 `baseline`。v3.1.0+ 加服务端门：**须 credential 同时下发 `snapshot.base_snapshot_id`** 才允许 increment（本地可验 base 仍是必要条件）。v3.11.1+ extra-manifest 同构平行门（`baseSnapshotId && lastAcceptedExtraManifest{Hash,Path}`）。
 
+diff base 的选择权在**客户端**：`buildRepoSnapshotDelta` 消费的是本地 `lastAcceptedManifest`（落盘在 `<config>/checkpoints/<hash12>/manifests/` 的那份，§4.5），服务端下发的 `base_snapshot_id` 只被回显进 `x:base_snapshot_id` 归因与 uploadKey 记录——服务端能靠**拒发**它强制客户端下次走 full，但无法指认客户端用哪份 manifest 做差分基。
+
 服务端拒收通道**不存在于客户端**：OSS callback 响应体从不解析（`uploadObject` 只看 `response.ok`）——`base_not_found`/`base_invalid`/`hash_mismatch` 三个处理分支（清 accepted manifest+ 丢 pending→下次 rebaseline）自 v2.3.0 写好后**从未可达**；客户端实际只产生四个 reason：`invalid`（缺 snapshot_id/无 credential）、`key_expired`（v3.6.1+）、`payload_too_large`（v3.2.1+）、`object_upload_failed`（非 2xx/fetch 异常）。服务端侧真拒收时客户端无感知，照常 `markAcceptedManifest`——这是协议层的记账盲点（REVIEW）。
 
 ### 4.5 state.json 与 pending 文件
 
 根目录 `<config>/repo-snapshots/`（v2.3.0–v3.1.3）→ `<config>/checkpoints/`（v3.2.0，`migrateLegacyRepoSnapshotRootDir` 每进程一次 `renameSync`；与 GitCheckpointStore 共用 `checkpoints/<sameHash>/`——workspaceHash 同为 `sha256(workspaceIdentity||workspacePath)[:12]`）。子目录 `{manifests,pending,tmp}` + `state.json`；v3.11.1+ `+extra-manifests/`。pending 文件名 = groupId：v3.2.0+ `${manifestHash}.${createdAt}`，v3.11.1+ `${manifestHash}.${extraManifestHash}.${createdAt}`（点分哈希三段，非 uuid；与 extraFiles 的组名 groupId 同名不同义）。
 
-`state.json` era：A=单 `pendingUpload`{kind,encryptedArtifactPath,encryptionEnvelopePath,manifestPath,baseManifestHash?,nextManifestHash,createdAt}+`lastAcceptedManifest{Hash,Path}`（v2.3.0–v2.13.0）；B=+`pendingUpload.attribution`{sessionId,queryId?,requestId}（v3.1.0–v3.1.3）；C=+`activeUpload`/`latestPendingUpload` 双槽 + `attemptCount`/`lastAttemptAt`/`groupId`（v3.2.0）；C1=+顶层 `failureCount`、条目 `failureCountedAt`（v3.2.1）；C2=+`lastCompressedSize`{encryptedSizeBytes,workspaceSizeBytes,manifestHash,recordedAt}（v3.2.3）；C3=+`uploadCredentialHandle`（v3.6.1）；C4=+`extraManifestPath`、`base/nextExtraManifestHash`、`lastAcceptedExtraManifest*`（v3.11.1）。
+`state.json` 七个 era（基线 = `pendingUpload`{kind,encryptedArtifactPath,encryptionEnvelopePath,manifestPath,baseManifestHash?,nextManifestHash,createdAt} + `lastAcceptedManifest{Hash,Path}`，此后每 era 只做增量）：
+
+| era | 版本           | 新增字段                                                                                   |
+| --- | -------------- | ------------------------------------------------------------------------------------------ |
+| A   | v2.3.0–v2.13.0 | （基线）单 `pendingUpload` 槽                                                              |
+| B   | v3.1.0–v3.1.3  | +`pendingUpload.attribution`{sessionId,queryId?,requestId}                                 |
+| C   | v3.2.0         | +`activeUpload`/`latestPendingUpload` 双槽、`attemptCount`/`lastAttemptAt`/`groupId`       |
+| C1  | v3.2.1         | +顶层 `failureCount`、条目 `failureCountedAt`                                              |
+| C2  | v3.2.3         | +`lastCompressedSize`{encryptedSizeBytes,workspaceSizeBytes,manifestHash,recordedAt}       |
+| C3  | v3.6.1         | +`uploadCredentialHandle`                                                                  |
+| C4  | v3.11.1        | +`extraManifestPath`、`base/nextExtraManifestHash`、`lastAcceptedExtraManifest{Hash,Path}` |
 
 唯一 drain 是捕获尾部 `flushWorkspace`（无 startup/周期 flush）：v2.x–v3.1.x 单 pending 下一次捕获覆盖（孤儿 .enc 累积，v2.x 无 GC）；v3.2.0+ active/latest 双槽，`shouldExhaustPending`=attempt≥3∨age≥24h 丢弃；v3.2.1+ 失败 pending 在下个 turn boundary `failureCountedAt`+`failureCount++`（写入 prompt.json meta 与 `x:failureCount`）。GC：v2.x 无；v3.1.0 启动扫 `.enc`>1h；v3.2.0+ init repair+4 类 GC（enc/tmp/envelope/manifests，protected-paths 豁免）；v3.11.1+ 每捕获 `enforceRepoSnapshotDiskQuota`（resident(pending+tmp)+2×maxSize≤3×maxSize，超额 `discardStalePendingForDiskQuota` 或中止捕获）。启动面：v3.1.x `cleanupStaleRepoEncryptedArtifacts`；v3.2.0+ `repairPersistedStates`+`cleanupStaleRepoSnapshotEncryptedArtifacts`+根目录迁移；v2.x 无启动清理。
 
@@ -273,6 +278,7 @@ v2.x：纯本地——`lastAcceptedManifestHash && lastAcceptedManifestPath` 且
 
 ### 5.2 credential 请求
 
+- **时机在捕获路径最前**（§1 图）：`captureBeforePromptUnsafe` 顶部 throwIfAborted → `tokenProvider()`（JWT）→ workspaceKeyHash → `getUploadKey`——credential 响应的 `snapshot_id`/`public_key`/`max_size` 是打包的必要输入，故 HTTP（仅缓存未命中时）先于一切磁盘扫描；`data:null` 立即中止捕获。其后才是 `recordFailureCountAtTurnBoundary`→磁盘配额→`globalConfigsProvider`→`Promise.all([scan…])`。flush 阶段零 HTTP：`requestUploadTarget` 只做 `uploadCredentialsByHandle`/`uploadCredentialsByCacheKey` 内存查表（miss/不匹配 → `key_expired` 丢 pending）。
 - URL：v2.3.0–v3.2.5 硬编码 `https://zcode.z.ai/api/v1/snapshot/upload-credential`（v2.3.0 `:13762` 命名常量）；v3.3.0+ `buildRuntimeZCodeApiUrl(process.env,"/api/v1/snapshot/upload-credential")`——origin 解析链 `ZCODE_ENV==="test"?test:production` → `ZCODE_BASE_URL ?? ZCODE_ENDPOINT_ORIGIN ?? ZCODE_{PRODUCTION,TEST}_BASE_URL` → 默认 prod `https://zcode.z.ai`、test `https://zcode.chatglm.site`（`overrideOrigin` 仅 test 生效）；query `workspace_id=sha256(workspaceKey)[:12]`。`VITE_ZCODE_ENDPOINT_ORIGIN` 全语料不存在。
 - 方法 **GET**（非披露的 POST）。headers：v2.x 仅 `Authorization: Bearer`；_*v3.1.0+ 注入完整 X-* 指纹头_*（§1.1 表）+`x-request-id` uuid。超时：v2.x–v3.5.3 无；v3.6.1+ `credentialTimeoutMs=15s`+caller signal。重试：无 HTTP 层 retry。
 - 非 2xx：`readApiJson` 抛 `ApiError{message=body.error|message|detail|msg,status,responseHeaders}`——`responseHeaders` 捕获 `x-request-id`/`x-trace-id`/`x-span-id` 诊断头。v3.12.x apiClient 走 `createHostApiNetworkTransport`（undici Agent/ProxyAgent，honor `httpProxy`/`noProxy`/`httpProxyCaCertPath`）+ 401 时 `onZcodeJwtInvalid` 钩子。
@@ -297,6 +303,24 @@ v2.x：纯本地——`lastAcceptedManifestHash && lastAcceptedManifestPath` 且
 | `sessionId`+`x:sessionId`、`queryId`+`x:queryId`、`requestId`+`x:requestId`                   | —          | —      | ✓       | ✓       | ✓       |
 | `failureCount`+`x:failureCount`（String 化）                                                  | —          | —      | v3.2.1+ | ✓       | ✓       |
 | `captureStage`+`x:captureStage`、`historyRoundCount`+`x:historyRoundCount`                    | —          | —      | —       | —       | ✓       |
+
+一次 v3.7.3+ 的 terminal increment，占位符→取值映射展开为（模板 `callback.body` 本体来自服务端，客户端只做 `${key}` 替换；取值经 `encodeURIComponent`，键序由模板决定）：
+
+| 占位符 key                                             | 填充值                                            |
+| ------------------------------------------------------ | ------------------------------------------------- |
+| `update_type`                                          | `incremental`（baseline→`full`）                  |
+| `checksum`                                             | `sha256:<明文 tar.gz 的 sha256 hex>`              |
+| `encrypted_aes_key`                                    | RSA-OAEP wrap 后 dataKey 的 base64                |
+| `x:update_type` / `x:checksum` / `x:encrypted_aes_key` | 同左三个值再写一份（`x:` 镜像）                   |
+| `x:base_snapshot_id`                                   | credential 下发的上次 snapshot_id                 |
+| `sessionId` + `x:sessionId`                            | `taskId` 剥 `sess_` 前缀                          |
+| `queryId` + `x:queryId`                                | 末次 query id                                     |
+| `requestId` + `x:requestId`                            | 本次捕获新签 uuidv4（非 ACP request id）          |
+| `failureCount` + `x:failureCount`                      | `String(Math.max(0,Math.floor(failureCount??0)))` |
+| `captureStage` + `x:captureStage`                      | `"terminal"`（prompt 捕获为 `"prompt"`）          |
+| `historyRoundCount` + `x:historyRoundCount`            | 会话轮数整数                                      |
+
+`checksum` 的语义值得停顿：它是**明文** tar.gz 的 sha256（envelope 的 `plaintextSha256`，`encryptArchive` 对压缩产物算）——不是密文哈希。服务端因此能在解密前完成完整性锚定与内容去重；OSS 侧看得到这个哈希但没有明文可验证。配合无认证 CTR（§4.3），它是全链唯一完整性机制——校验的是明文、由接收方比对。
 
 注意归因字段**同时**以 bare 表单字段明文给 OSS 与以 `x:` 键进 callback body（`ossAttributionPlaceholderValues` 双写）——Aliyun OSS 侧可见 sessionId/queryId/requestId 等明文。注册不存在独立 client→server 调用：OSS 服务端把 callbackBody POST 回 `callbackUrl` 完成登记，响应体客户端不读。
 
@@ -332,6 +356,8 @@ v2.x–v3.1.0 内联字面量 `repo_snapshot_{manifest,manifest_hash,prompt,delt
 ## 7. 开关接线（能不能关）
 
 ### 7.1 三阶段演化
+
+![同意门三阶段：界面显示与引擎生效的背离](assets/snapshot-upload-consent.svg)
 
 **阶段一 v2.3.0–v2.5.0：诚实 opt-in。** 唯一读取点 `indexingEnabledProvider`→`settings.repoSnapshotIndexingEnabled===true`（zod `boolean().default(false)`），位于 `captureBeforePromptUnsafe` 首行（v2.3.0 `:50041`）——gate 住 capture 及下游全部 upload。UI switch `checked` 绑 raw flag，显示≡行为。
 
@@ -408,6 +434,26 @@ sidecar 无条件实例化；remote workspace（`workspaceIdentity` 非空 opaqu
 | status JSON: kind=baseline/failureCount/lastCompressedSize | **部分成立**：`kind` 自始有；`failureCount` v3.2.1、`lastCompressedSize` v3.2.3——报告描述的是 ≥v3.2.3 形态                            |
 | extra manifest（哈希全局配置进上传）                       | **v3.11.1+ 成立**（global-configs+references；settings.behavior 白名单含两个 toggle 取值）                                            |
 | 无任何用户披露                                             | **成立**（全部 55 版 UI 零披露；本地日志如实记录 "upload accepted" 但不对用户展示）                                                   |
+
+## 13. 能力边界（综合裁决）
+
+把 §1–§12 的机制收拢成"谁能做什么"清单：
+
+**zcode 服务端能**：拒发 credential（`data:null` → 客户端整个捕获静默中止——全版本唯一实质同意门）；拒发 `base_snapshot_id` 强制下次走 full；解密全部明文（RSA 私钥 + callback 送达的 wrapped dataKey）；用 `checksum`（明文 sha256）在解密前做完整性锚定与去重；靠 `workspace_id` 假名 + `x:` 归因串联同一仓库的全部上传与会话轨迹（sessionId/queryId/captureStage/historyRoundCount/failureCount）。
+
+**zcode 服务端不能**：指定客户端的 diff base（增量基是客户端本地 `lastAcceptedManifest`，服务端只能强制 full）；从本协议观察到客户端侧的扫描/打包失败（客户端静默跳过，唯一可见面是 ARMS 网络层指标里 credential GET 的成败/时延）。
+
+**客户端能**：`data:null`/无登录态/remote workspace 时静默中止；服务端真拒收时照常把 manifest 记为 accepted（`base_*` 三分支自 v2.3.0 即死代码——单向记账盲点）。
+
+**客户端不能**：得知服务端是否接受某次上传（callback 响应体从不解析）；向用户报告失败（v3.x 失败路径无计数器无日志）。
+
+**阿里云 OSS 能**：看到密文 blob（大小/时序/客户端 IP）；bare 归因字段明文（不经加密通道直贴表单）；base64 解 `callback` 字段得 wrapped dataKey 与明文 sha256。
+
+**阿里云 OSS 不能**：解密 artifact（RSA 私钥仅在 zcode 服务端）；校验 checksum（拿不到明文可比）。
+
+**用户能（从 UI/文件系统）**：拨动设置开关——v2.6.0 起只改显示不改行为，v3.1.0 起连行为都不影响；v3.11.1 起把自己的 consent 取值经 global-configs 打进快照 payload 发给服务端。
+
+**用户不能**：从任何 UI、文档、诊断导出得知此功能存在（55 版零披露，导出刻意排除快照目录，§10）；用任何客户端手段关闭上传——无 env gate、无功能开关，唯一有效旁路是退出登录或迁往 remote workspace（`workspaceIdentity` 非空即不捕获）。
 
 ## REVIEW
 
