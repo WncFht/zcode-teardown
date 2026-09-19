@@ -1,10 +1,12 @@
 % !TeX program = xelatex
 \documentclass[11pt,a4paper,fontset=none]{ctexart}
 
+\setmainfont{Libertinus Serif}
+\setsansfont{Libertinus Sans}
+\setmonofont{Hack}[Scale=MatchLowercase]
 \setCJKmainfont{Noto Serif CJK SC}
 \setCJKsansfont{Noto Sans CJK SC}
 \setCJKmonofont{Noto Sans Mono CJK SC}
-\setmonofont{Noto Sans Mono CJK SC}[Scale=MatchLowercase]
 
 \usepackage[margin=2.4cm,top=2.6cm,bottom=2.8cm]{geometry}
 \usepackage{graphicx}
@@ -22,6 +24,7 @@
 \setlist{nosep,leftmargin=1.8em}
 \setlength{\parskip}{0.35em}
 \setlength{\parindent}{2em}
+\emergencystretch=3em
 
 % \cid{...} 行内代码：参数里的 _ $ & % # ^ ~ | 按字面排版；
 % 含花括号的片段请改用 \verb+...+。
@@ -31,11 +34,21 @@
   \catcode`\%=12\relax \catcode`\#=12\relax \catcode`\^=12\relax
   \catcode`\~=12\relax \catcode`\|=12\relax
   \codeSpan}
-\newcommand{\codeSpan}[1]{\texttt{#1}\endgroup}
+\newcommand{\codeSpan}[1]{{\small\texttt{#1}}\endgroup}
 
 \DefineVerbatimEnvironment{code}{Verbatim}{%
   fontsize=\footnotesize,frame=single,framesep=2.2mm,
   rulecolor=\color{black!35}}
+
+% 章节要点：灰色底纹小字框
+\usepackage{mdframed}
+\newenvironment{takeaway}{%
+  \begin{mdframed}[backgroundcolor=black!4,linecolor=black!20,
+    linewidth=0.5pt,skipabove=7pt,skipbelow=7pt,
+    innertopmargin=5pt,innerbottommargin=5pt,
+    innerleftmargin=8pt,innerrightmargin=8pt]
+  \small\textbf{要点}\quad\ignorespaces
+}{\end{mdframed}}
 
 \title{ZCode 工作区快照上传机制\\——基于 55 个发布版本的逆向分析}
 \author{}
@@ -88,6 +101,10 @@ pending & 已加密待传产物（\cid{.enc} 密文、envelope、manifest、uplo
 \end{longtable}
 
 \section{端到端管线}
+
+\begin{takeaway}
+管线五步：取 credential（GET）→ 枚举过滤文件 → tar+gzip → AES-256-CTR 加密 + RSA 包装密钥 → multipart POST 到 OSS → OSS 回传 callback 完成登记。credential 响应先于磁盘扫描，因为打包依赖其中的 \cid{snapshot_id} 与 \cid{public_key}。
+\end{takeaway}
 
 \begin{figure}[htbp]
 \centering
@@ -145,9 +162,13 @@ transport & 客户端 IP、时序、blob 大小；不带 Authorization、x-reque
 
 \section{版本演化时间线}
 
+\begin{takeaway}
+55 个版本分三个 era：v2.3.0 首秀为诚实的 opt-in，v2.6.0 默认翻转为 opt-out（界面仍显示关），v3.1.0 起开关被移出管线成为纯装饰——此后是否上传只由登录态、workspace 类型与服务端 credential 签发决定。
+\end{takeaway}
+
 \subsection{首秀判定与实现载体}
 
-v2.2.0 时 \cid{upload-credential}、\cid{captureBeforePrompt}、\cid{repoSnapshot}、\cid{repo-snapshot} 四个指示符全部零命中；同版中 \cid{checkpoints}、\cid{snapshot}、\cid{aliyuncs}、\cid{aes-256-ctr} 的命中经逐一核对均为无关噪音——\cid{checkpoints} 是已有的 GitCheckpointStore 本地回滚功能，\cid{aliyuncs} 是 Qwen provider 端点 \cid{dashscope.aliyuncs.com}，\cid{snapshot} 命中全是 git-diff 快照类型。v2.3.0 首秀即完整形态：\cid{app/out/host/index.js} 内嵌 \cid{repo-snapshot/*.ts} 的 esbuild 源文件 banner，可读出十个源模块（artifact、hasher、canonicalJson、paths、filter、scanner、sidecarService、stateRepo、credentialDiagnostics、uploadClient、uploadWorker）。
+v2.2.0 时 \cid{upload-credential}、\allowbreak\cid{captureBeforePrompt}、\allowbreak\cid{repoSnapshot}、\allowbreak\cid{repo-snapshot} 四个指示符全部零命中；同版中 \cid{checkpoints}、\cid{snapshot}、\cid{aliyuncs}、\cid{aes-256-ctr} 的命中经逐一核对均为无关噪音——\cid{checkpoints} 是已有的 GitCheckpointStore 本地回滚功能，\cid{aliyuncs} 是 Qwen provider 端点 \cid{dashscope.aliyuncs.com}，\cid{snapshot} 命中全是 git-diff 快照类型。v2.3.0 首秀即完整形态：\cid{app/out/host/index.js} 内嵌 \cid{repo-snapshot/*.ts} 的 esbuild 源文件 banner，可读出十个源模块（artifact、hasher、canonicalJson、paths、filter、scanner、\allowbreak sidecarService、stateRepo、credentialDiagnostics、uploadClient、uploadWorker）。
 
 实现载体全版本一致：管线代码只存在于 \cid{app/out/host/index.js}。v2.x 的 \cid{app/out/main/index.js} 只剩 banner 注释（代码被 tree-shake）；v3.x 中 main、scheduler、preload、renderer 与 glm bundle 里的 \cid{/snapshot/upload-credential} 与 \cid{repoSnapshot*} 命中，逐一穷举后确认全部是共享 schema 常量、设置键或日志排除表，无第二份实现。sidecar 服务自 v2.3.0 起在 host 引导流程中无条件实例化。
 
@@ -203,6 +224,10 @@ v3.12.3 & 快照相关区域与 v3.12.2 字节一致；新增 pack 级 abort（g
 \section{捕获范围}
 \label{sec:scope}
 
+\begin{takeaway}
+\cid{git ls-files} 列出的一切进包——v3.1.0 起含完整 \cid{.git/} 树（remote URL token、reflog、pack 文件全收）且豁免后续全部过滤；v3.11.1 起追加全局配置与 prompt 附件。无文件数或总字节上限，secret 过滤覆盖很窄。
+\end{takeaway}
+
 \subsection{候选枚举：git ls-files 主路与 walkFiles 回落}
 
 全版本共用同一条 spawn：
@@ -218,7 +243,7 @@ spawn("git", ["ls-files", "--cached", "--others", "--exclude-standard", "-z"], {
 
 回落路径 \cid{walkFiles} 在 spawn 失败（ENOENT/EACCES）或退出码非零（含非 git 仓库的 128）时启用；abort（v3.3.6 起）按 reject 处理、不回落。git 卡死没有超时兜底，v3.6.1 之前会挂住整个捕获。
 
-\cid{walkFiles} 是递归 \cid{opendir} 深度优先：v2.x 剪枝集为 \verb|{.git,node_modules,.cache,.turbo,dist,build,out,.next,coverage}|，按段名在任意深度生效；v3.2.0 起 \cid{.git} 按 basename 剪枝，build 输出类目录收窄为仅顶层匹配，并加入 \cid{app.asar.unpacked} 与 \cid{*.asar}。只收 \cid{isFile()||isSymbolicLink()} 的项，socket、fifo 丢弃，symlink 目录不下钻，深度无界，最终按 \cid{localeCompare} 排序。任何一次 \cid{opendir} 返回 EPERM/EACCES 都直接上抛——一个不可读目录杀掉整个捕获，全版本皆然。该路径不解析 ignore 规则：git 缺席时 gitignored 文件会被打包；walk 对 \cid{.git} 目录剪枝但 \cid{.git} 文件仍进；非 git 工作区会正常下钻进 submodule 与嵌套仓库目录收文件。
+\cid{walkFiles} 是递归 \cid{opendir} 深度优先：v2.x 剪枝集为 \verb|{.git,node_modules,.cache,.turbo,|\allowbreak\verb|dist,build,out,.next,coverage}|，按段名在任意深度生效；v3.2.0 起 \cid{.git} 按 basename 剪枝，build 输出类目录收窄为仅顶层匹配，并加入 \cid{app.asar.unpacked} 与 \cid{*.asar}。只收 \cid{isFile()||isSymbolicLink()} 的项，socket、fifo 丢弃，symlink 目录不下钻，深度无界，最终按 \cid{localeCompare} 排序。任何一次 \cid{opendir} 返回 EPERM/EACCES 都直接上抛——一个不可读目录杀掉整个捕获，全版本皆然。该路径不解析 ignore 规则：git 缺席时 gitignored 文件会被打包；walk 对 \cid{.git} 目录剪枝但 \cid{.git} 文件仍进；非 git 工作区会正常下钻进 submodule 与嵌套仓库目录收文件。
 
 gitlink 与嵌套仓库的边界行为值得一提。\cid{git ls-files} 会把 submodule 发成裸路径（mode 160000 的 gitlink），把未跟踪嵌套仓库发成带尾斜杠的目录项。v2.x 的扫描循环没有 \cid{isFile()} 守卫，\cid{readSample} 对目录 \cid{open} 成功而 \cid{read} 抛 EISDIR，异常一路上传出扫描函数；调用方是 fire-and-forget 的 \cid{void ...captureBeforePrompt(...)}，unhandled rejection 被静默吞掉（v2.3.0 的 \cid{app/out/host/index.js:14990}，Node v26 下实测复现）。也就是说，v2.x 里任何含 submodule 或嵌套仓库的工作区从未成功上传过快照。v3.1.0 起 \cid{!isFile()&&!symlink→continue} 修复，已在 v3.1.0、v3.2.0、v3.6.1、v3.12.3 逐版复核。
 
@@ -247,19 +272,19 @@ v3.x 的变化：build 排除收窄至顶层（v3.2.0）；\cid{.git} 段在 sym
 \subsection{\cid{.git} 翻转（v3.1.0）}
 \label{sec:gitdir}
 
-v2.x 对 \cid{.git} 有三重排除：ls-files 不列、filter 段规则、walkFiles 剪枝。v3.1.0 起这一策略翻转，全部 41 个 3.x tag 行为一致：\cid{appendRootGitMetadataPaths} 对 \cid{<workspace>/.git} 做 \cid{lstat}——ENOENT 则不动；是目录则由 \cid{walkGitMetadataFiles} 零剪枝递归追加每一个文件（objects/pack/refs/logs/config/hooks/index/LFS、\cid{modules/<sub>/…}、\cid{worktrees/} 全收）；是文件（linked worktree 的 gitfile）则只打指针本身；是符号链接则静默贡献零（\cid{lstat} 不跟随）。过滤链中 \cid{.git} 段紧随 symlink 检查返回 include，豁免 secret、大小、二进制、dep-cache-build 全部后续过滤；嵌套的 \cid{.git/} 目录不枚举，只认根。后果是 \cid{.git/config} 里的 remote URL token、reflog、数 MB 的 pack 文件全量外发。
+v2.x 对 \cid{.git} 有三重排除：ls-files 不列、filter 段规则、walkFiles 剪枝。v3.1.0 起这一策略翻转，全部 41 个 3.x tag 行为一致：\cid{appendRootGitMetadata}\allowbreak\cid{Paths}\allowbreak 对 \cid{<workspace>/.git} 做 \cid{lstat}——ENOENT 则不动；是目录则由 \cid{walkGitMetadataFiles}\allowbreak 零剪枝递归追加每一个文件（objects/pack/refs/logs/config/hooks/index/LFS、\cid{modules/<sub>/…}、\cid{worktrees/} 全收）；是文件（linked worktree 的 gitfile）则只打指针本身；是符号链接则静默贡献零（\cid{lstat} 不跟随）。过滤链中 \cid{.git} 段紧随 symlink 检查返回 include，豁免 secret、大小、二进制、dep-cache-build 全部后续过滤；嵌套的 \cid{.git/} 目录不枚举，只认根。后果是 \cid{.git/config} 里的 remote URL token、reflog、数 MB 的 pack 文件全量外发。
 
 \subsection{extraManifest（v3.11.1 上线）}
 
-\cid{repo_snapshot_extra_manifest} 字面量在语料中 grep 不到，因为 schema 名由 \cid{repo_snapshot_<name>/<ver>} 模板拼出；边界为 v3.10.2 到 v3.11.1。extra 内容打进同一个加密 tar：
+\cid{repo_snapshot_}\allowbreak\cid{extra_manifest} 字面量在语料中 grep 不到，因为 schema 名由 \cid{repo_snapshot_}\allowbreak\cid{<name>/<ver>} 模板拼出；边界为 v3.10.2 到 v3.11.1。extra 内容打进同一个加密 tar：
 
 \begin{itemize}
 \item \cid{extra-meta/manifest.json}（increment 时加 \cid{extra-meta/delta.json}）：按组与路径排序的文件清单；extra-delta 的判据是 sizeBytes 或 contentHash，与主 delta 仅看大小不同。无输入时整个 manifest 缺席，只用空 manifest 占位供哈希。
-\item 组 \cid{global-configs}（\cid{changePolicy:"rare"}）：\cid{settings.behavior.json} 按 17 键白名单打包（含两个快照开关自身的取值，另剥离 model/provider/baseURL/language/theme/locale/window/layout/zoom/workspacePath 等键）、\cid{mcp.json}（MCP 服务器配置逐字）、\cid{skills.json}、\cid{commands.json}、\cid{hooks.json}（shell hook 命令串一并上传）、\cid{memory.json}（20MiB 截断）、\cid{subagents.json}、\cid{plugins.json}、\cid{instructions.json}（\cid{~/.zcode/AGENTS.md}，$\leq$20MiB）。\cid{sanitizeUnknown} 把键名匹配 \cid{api_key|access_token|refresh_token|secret|password|credential|authorization|cookie|session_token|token} 的值改写为 \cid{<redacted>}。
+\item 组 \cid{global-configs}（\cid{changePolicy:"rare"}）：\allowbreak\cid{settings.behavior.json}\allowbreak 按 17 键白名单打包（含两个快照开关自身的取值，另剥离 model/\allowbreak provider/\allowbreak baseURL/\allowbreak language/\allowbreak theme/\allowbreak locale/\allowbreak window/\allowbreak layout/\allowbreak zoom/\allowbreak workspacePath 等键）、\cid{mcp.json}（MCP 服务器配置逐字）、\cid{skills.json}、\cid{commands.json}、\cid{hooks.json}（shell hook 命令串一并上传）、\cid{memory.json}（20MiB 截断）、\cid{subagents.json}、\cid{plugins.json}、\cid{instructions.json}（\cid{~/.zcode/AGENTS.md}，$\leq$20MiB）。\cid{sanitizeUnknown} 把键名匹配 \verb+api_key|access_token|+\allowbreak\verb+refresh_token|secret|+\allowbreak\verb+password|credential|+\allowbreak\verb+authorization|cookie|+\allowbreak\verb+session_token|token+ 的值改写为 \cid{<redacted>}。
 \item 组 \cid{references}：prompt 附件。本地路径或可解析为本地路径的 ref 打包；至多 16 个文件、1GiB，mime 上限 image 20MiB、video 200MiB、audio 20MiB、default 100MiB，inline text/base64 各 20MiB 截断；重名按 \cid{name-2.ext} 去重。
 \end{itemize}
 
-引入后唯一变化是 v3.12.1 把 subagents 的 \cid{thoughtLevel} 字段来源改为 \cid{modelSelection?.options?.reasoningLevel}。
+引入后唯一变化是 v3.12.1 把 subagents 的 \cid{thoughtLevel} 字段来源改为\allowbreak \cid{modelSelection.}\allowbreak\cid{options.reasoningLevel}。
 
 \subsection{无上限与边界行为}
 
@@ -271,6 +296,10 @@ v2.x 对 \cid{.git} 有三重排除：ls-files 不列、filter 段规则、walkF
 \end{itemize}
 
 \section{归档与状态格式}
+
+\begin{takeaway}
+tar 根目录名即服务端签发的 \cid{snapshot_id}；增量判据只看路径与文件大小，等长改写不可见。state.json 历经七个结构 era 追踪 pending 上传；pending 唯一投递机会是捕获尾部 flush，无启动或周期 flush。
+\end{takeaway}
 
 \subsection{tar 布局与头部}
 
@@ -292,7 +321,13 @@ manifest.json（v2.3.0 起，v3.12.3 字段相同）：
   stats: { includedFileCount, includedBytes } }
 \end{code}
 
-\cid{manifestHash} = \verb+sha256.hex(canonicalJson({schema:"repo_snapshot_manifest_hash/v1", workspaceKey, files:[{path,sizeBytes}] sorted}))+；canonical JSON 的规则是对象键排序、\cid{undefined} 丢弃、数组保序。
+\cid{manifestHash} 由以下规范化 JSON 的 sha256 得出；canonical JSON 的规则是对象键排序、\cid{undefined} 丢弃、数组保序：
+
+\begin{code}
+sha256.hex(canonicalJson({
+    schema:"repo_snapshot_manifest_hash/v1",
+    workspaceKey, files:[{path,sizeBytes}] sorted }))
+\end{code}
 
 delta.json（v2.3.0 起形状不变）：
 
@@ -305,7 +340,7 @@ delta.json（v2.3.0 起形状不变）：
 
 判据只有路径与 sizeBytes——等长改写对增量不可见。扫描自 v3.3.6 采集的 mtimeMs/ctimeMs 在快照路径是死字段，真实消费者是 repo-wiki manifest（\cid{repo-wiki-manifest/v2}）。v3.2.0 要求 increment 必须携带 delta；v3.11.1 起空 delta 整条省略但仍按 increment 发。
 
-prompt.json：v2.x 为 \verb|{schema:"repo_snapshot_prompt/v1", taskId, traceId, createdAt, manifestHash, content}|；v3.1.0 起（/v2 名自 v3.1.1）：
+prompt.json：v2.x 的 schema 为 \cid{repo_snapshot_prompt/v1}，字段含 \cid{taskId}、\cid{traceId}、\cid{createdAt}、\cid{manifestHash}、\cid{content}；v3.1.0 起（/v2 名自 v3.1.1）：
 
 \begin{code}
 { schema,
@@ -339,24 +374,38 @@ prompt.json：v2.x 为 \verb|{schema:"repo_snapshot_prompt/v1", taskId, traceId,
 
 aad 在客户端密码学上无效：\cid{createCipheriv("aes-256-ctr")} 没有 AAD 槽，也没有任何 \cid{setAAD} 调用——\cid{aad} 只是随 \cid{*.envelope.json} 序列化的声明性元数据，供服务端 canonicalize 比对。完整方案是无认证 CTR，完整性只靠明文 sha256 在服务端比对。SPKI 解析失败时 \cid{normalizePublicKeySpkiPem} 换 \cid{RSA PUBLIC KEY}（PKCS1）重试；\cid{encryption.algorithm} 非 \cid{RSA-OAEP-256} 则抛错。
 
-uploadKey（\cid{repo_snapshot_upload_key/v1}，从未升版）：\verb|{schema, snapshotId, keyId, keyWrapAlgorithm:"rsa-oaep-sha256", publicKeySpkiPem}|；v3.1.0 起加 \cid{baseSnapshotId?}；v3.2.3 起加 \cid{maxSizeBytes?}；v3.6.1 起加 \cid{uploadCredentialHandle}。
+uploadKey（\cid{repo_snapshot_upload_key/v1}，从未升版）：
 
-\cid{repo_snapshot_upload_target/v1} 是不上线的内部对象：\verb|{schema, workspaceKeyHash, kind, manifestHash, baseManifestHash, encryptedArtifact:{…envelope, encryptedSizeBytes, encryptedSha256}}|；v3.6.1 起附 \cid{uploadCredentialHandle} 与 \cid{attribution}。
+\begin{code}
+{ schema, snapshotId, keyId,
+  keyWrapAlgorithm: "rsa-oaep-sha256", publicKeySpkiPem }
+\end{code}
+
+v3.1.0 起加 \cid{baseSnapshotId?}；v3.2.3 起加 \cid{maxSizeBytes?}；v3.6.1 起加 \cid{uploadCredentialHandle}。
+
+\cid{repo_snapshot_upload_target/v1} 是不上线的内部对象：
+
+\begin{code}
+{ schema, workspaceKeyHash, kind, manifestHash, baseManifestHash,
+  encryptedArtifact: { …envelope, encryptedSizeBytes, encryptedSha256 } }
+\end{code}
+
+v3.6.1 起附 \cid{uploadCredentialHandle} 与 \cid{attribution}。
 
 \subsection{baseline 与 increment 决策}
 \label{sec:delta}
 
-v2.x 是纯本地决策：\cid{lastAcceptedManifestHash} 与 \cid{lastAcceptedManifestPath} 齐备、且 \cid{readAcceptedBaseManifest} 复算 manifestHash 通过，则发 \cid{kind="increment"}，否则 \cid{baseline}。v3.1.0 起加了服务端门：credential 必须同时下发 \cid{snapshot.base_snapshot_id} 才允许 increment，本地可验 base 仍是必要条件。v3.11.1 起 extra-manifest 有同构的平行门。
+v2.x 是纯本地决策：\cid{lastAccepted}\allowbreak\cid{ManifestHash}\allowbreak 与 \cid{lastAccepted}\allowbreak\cid{ManifestPath}\allowbreak 齐备、且 \cid{readAccepted}\allowbreak\cid{BaseManifest}\allowbreak 复算\allowbreak manifestHash 通过，则发 \cid{kind=}\allowbreak\cid{"increment"}，否则 \cid{baseline}。v3.1.0 起加了服务端门：credential 必须同时下发 \cid{snapshot.}\allowbreak\cid{base_snapshot_id} 才允许 increment，本地可验 base 仍是必要条件。v3.11.1 起 extra-manifest 有同构的平行门。
 
-需要强调的是，差分基的选择权在客户端：\cid{buildRepoSnapshotDelta} 消费的是本地 \cid{lastAcceptedManifest}（落盘在状态目录的那一份），服务端下发的 \cid{base_snapshot_id} 只被回显进 \cid{x:base_snapshot_id} 归因与 uploadKey 记录。服务端能靠拒发它强制客户端下次走 full，但无法指认客户端用哪份 manifest 做差分。
+需要强调的是，差分基的选择权在客户端：\cid{buildRepoSnapshot}\allowbreak\cid{Delta}\allowbreak 消费的是本地 \cid{lastAccepted}\allowbreak\cid{Manifest}（落盘在状态目录的那一份），服务端下发的 \cid{base_snapshot_id} 只被回显进 \cid{x:base_snapshot_id} 归因与 uploadKey 记录。服务端能靠拒发它强制客户端下次走 full，但无法指认客户端用哪份 manifest 做差分。
 
-服务端拒收的通道在客户端不存在：OSS callback 响应体从不解析（\cid{uploadObject} 只看 \cid{response.ok}），为拒收准备的 \cid{base_not_found}/\cid{base_invalid}/\cid{hash_mismatch} 三个处理分支自 v2.3.0 写好后从未可达。客户端实际只产生四种 reason：\cid{invalid}（缺 \cid{snapshot_id} 或无 credential）、\cid{key_expired}（v3.6.1 起）、\cid{payload_too_large}（v3.2.1 起）、\cid{object_upload_failed}。服务端真拒收时客户端无感知，照常 \cid{markAcceptedManifest}——这是协议层的记账盲点。
+服务端拒收的通道在客户端不存在：OSS callback 响应体从不解析（\cid{uploadObject} 只看 \cid{response.ok}），为拒收准备的 \cid{base_not_found}/\allowbreak\cid{base_invalid}/\allowbreak\cid{hash_mismatch} 三个处理分支自 v2.3.0 写好后从未可达。客户端实际只产生四种 reason：\cid{invalid}（缺 \cid{snapshot_id} 或无 credential）、\cid{key_expired}（v3.6.1 起）、\allowbreak\cid{payload_too_large}（v3.2.1 起）、\allowbreak\cid{object_upload_failed}。服务端真拒收时客户端无感知，照常 \cid{markAcceptedManifest}——这是协议层的记账盲点。
 
 \subsection{state.json 与 pending 文件}
 
-状态根目录为 \cid{<config>/repo-snapshots/}（v2.3.0–v3.1.3），v3.2.0 起迁至 \cid{<config>/checkpoints/}（\cid{migrateLegacyRepoSnapshotRootDir} 每进程执行一次 \cid{renameSync}，与 GitCheckpointStore 共用 \cid{checkpoints/<hash12>/}——workspaceHash 同为 \cid{sha256(workspaceKey)[:12]}）。子目录有 \cid{manifests}、\cid{pending}、\cid{tmp} 与 \cid{state.json}，v3.11.1 起加 \cid{extra-manifests/}。pending 文件名即 groupId：v3.2.0 起为 \cid{<manifestHash>.<createdAt>}，v3.11.1 起中段插入 extraManifestHash。
+状态根目录为 \cid{<config>/repo-snapshots/}（v2.3.0–v3.1.3），v3.2.0 起迁至 \cid{<config>/checkpoints/}（\cid{migrateLegacyRepoSnapshot}\allowbreak\cid{RootDir}\allowbreak 每进程执行一次 \cid{renameSync}，与 GitCheckpointStore 共用\allowbreak \cid{checkpoints/<hash12>/}——workspaceHash 同为\allowbreak \cid{sha256(workspaceKey)[:12]}）。子目录有 \cid{manifests}、\cid{pending}、\cid{tmp} 与 \cid{state.json}，v3.11.1 起加 \cid{extra-manifests/}。pending 文件名即 groupId：v3.2.0 起为 \cid{<manifestHash>.<createdAt>}，v3.11.1 起中段插入 extraManifestHash。
 
-\cid{state.json} 历经七个结构 era，基线字段为 \verb|pendingUpload{kind, encryptedArtifactPath, encryptionEnvelopePath, manifestPath, baseManifestHash?, nextManifestHash, createdAt}| 加 \verb|lastAcceptedManifest{Hash,Path}|：
+\cid{state.json} 历经七个结构 era。基线字段为 \cid{pendingUpload}（字段含 \cid{kind}、\allowbreak\cid{encryptedArtifactPath}、\allowbreak\cid{encryptionEnvelopePath}、\allowbreak\cid{manifestPath}、\allowbreak\cid{baseManifestHash?}、\allowbreak\cid{nextManifestHash}、\allowbreak\cid{createdAt}）加 \cid{lastAcceptedManifestHash} 与\allowbreak \cid{lastAcceptedManifestPath}：
 
 \begin{table}[htbp]
 \centering\small
@@ -368,7 +417,7 @@ A & v2.3.0–v2.13.0 & 基线，单 \cid{pendingUpload} 槽 \\
 B & v3.1.0–v3.1.3 & \verb|pendingUpload.attribution{sessionId,queryId?,requestId}| \\
 C & v3.2.0 & \cid{activeUpload}/\cid{latestPendingUpload} 双槽、\cid{attemptCount}/\cid{lastAttemptAt}/\cid{groupId} \\
 C1 & v3.2.1 & 顶层 \cid{failureCount}、条目 \cid{failureCountedAt} \\
-C2 & v3.2.3 & \verb|lastCompressedSize{encryptedSizeBytes,workspaceSizeBytes,manifestHash,recordedAt}| \\
+C2 & v3.2.3 & \verb|lastCompressedSize{encryptedSizeBytes,|\allowbreak\verb|workspaceSizeBytes,manifestHash,recordedAt}| \\
 C3 & v3.6.1 & \cid{uploadCredentialHandle} \\
 C4 & v3.11.1 & \cid{extraManifestPath}、\cid{base/nextExtraManifestHash}、\verb|lastAcceptedExtraManifest{Hash,Path}| \\
 \bottomrule
@@ -379,6 +428,10 @@ pending 唯一的投递机会是捕获尾部的 \cid{flushWorkspace}，没有启
 
 \section{加密与上传}
 \label{sec:crypto}
+
+\begin{takeaway}
+AES-256-CTR 加密 + RSA-OAEP-SHA256 包装密钥，经 OSS PostObject 直传；callback 字段承载 wrapped key 与归因但响应体从不解析——服务端拒收对客户端完全不可见。\cid{data:null} 是唯一的实质同意门。
+\end{takeaway}
 
 \subsection{管线形状与 abort 演化}
 
@@ -393,15 +446,15 @@ URL 与请求形态：v2.3.0–v3.2.5 硬编码 \cid{https://zcode.z.ai/api/v1/s
 
 方法为 GET（披露报告称 POST，有误）。headers：v2.x 仅 \cid{Authorization: Bearer}；v3.1.0 起注入完整 X-* 指纹头与 \cid{x-request-id}（uuid）。超时：v2.x–v3.5.3 无；v3.6.1 起 \cid{credentialTimeoutMs=15s} 加调用方 signal。无 HTTP 层重试。
 
-非 2xx 时 \cid{readApiJson} 抛 \cid{ApiError}，message 依次取 body 的 \cid{error|message|detail|msg}，同时捕获 \cid{x-request-id}、\cid{x-trace-id}、\cid{x-span-id} 诊断头。v3.12.x 的 apiClient 走 undici transport（honor \cid{httpProxy}/\cid{noProxy}/\cid{httpProxyCaCertPath}），401 时触发 \cid{onZcodeJwtInvalid} 钩子。
+非 2xx 时 \cid{readApiJson} 抛 \cid{ApiError}，message 依次取 body 的 \cid{error|message|}\allowbreak\cid{detail|msg}，同时捕获 \cid{x-request-id}、\cid{x-trace-id}、\cid{x-span-id} 诊断头。v3.12.x 的 apiClient 走 undici transport（honor \cid{httpProxy}/\cid{noProxy}/\cid{httpProxyCaCertPath}），401 时触发 \cid{onZcodeJwtInvalid} 钩子。
 
-响应校验 \cid{resolveUploadCredentialData}：envelope \verb|{code,msg,data}|，\cid{code!==0} 抛错，\cid{!data} 返回 null——这就是服务端的 kill switch。必填字段：\verb+callback.{url,body,content_type}+、\verb+oss.{host,path,policy,x_oss_*}+、\verb+encryption.{public_key,key_version,algorithm}+、\cid{snapshot.snapshot_id}，缺失抛“missing fields”并把各子对象键名写进本地日志。可选：\cid{data.max_size}（v3.2.1 起解析、规范化、非法剥离）、\cid{data.snapshot.base_snapshot_id}（v2.13.0 起）；\cid{ttl}、\cid{expires} 类字段从不读取。
+响应校验 \cid{resolveUploadCredential}\allowbreak\cid{Data}：envelope \verb|{code,msg,data}|，\cid{code!==0} 抛错，\cid{!data} 返回 null——这就是服务端的 kill switch。必填字段：\verb+callback.{url,body,+\allowbreak\verb+content_type}+、\allowbreak\verb+oss.{host,path,policy,+\allowbreak\verb+x_oss_*}+、\allowbreak\verb+encryption.{public_key,+\allowbreak\verb+key_version,algorithm}+、\allowbreak\cid{snapshot.}\allowbreak\cid{snapshot_id}，缺失抛”missing fields”并把各子对象键名写进本地日志。可选：\cid{data.max_size}（v3.2.1 起解析、规范化、非法剥离）、\allowbreak\cid{data.snapshot.}\allowbreak\cid{base_snapshot_id}（v2.13.0 起）；\cid{ttl}、\cid{expires} 类字段从不读取。
 
-credential 复用有两代。v2.3.0–v3.5.3：\cid{uploadCredentialsByCacheKey} 以 \cid{sha256(token)[:16]:workspaceId} 为键，\cid{requestUploadTarget} 取出即删除。v3.6.1 起：\cid{uploadCredentialsByHandle} 以 UUID 为键、记录 tokenHash/workspaceId/1h 过期点，一次性消费，\cid{workspaceId} 或 \cid{tokenHash} 不符即 \cid{key_expired}；pending 落盘只写 handle 不写 credential 本体，重启后内存 map 为空、必然 \cid{key_expired}——这是设计行为而非缺陷。
+credential 复用有两代。v2.3.0–v3.5.3：\cid{uploadCredentialsBy}\allowbreak\cid{CacheKey} 以 \verb|sha256(token)[:16]|\allowbreak\verb|:workspaceId| 为键，\cid{requestUploadTarget} 取出即删除。v3.6.1 起：\cid{uploadCredentialsBy}\allowbreak\cid{Handle} 以 UUID 为键、记录 tokenHash/workspaceId/1h 过期点，一次性消费，\cid{workspaceId} 或 \cid{tokenHash} 不符即 \cid{key_expired}；pending 落盘只写 handle 不写 credential 本体，重启后内存 map 为空、必然 \cid{key_expired}——这是设计行为而非缺陷。
 
 \subsection{OSS PostObject 上传}
 
-\cid{buildObjectUploadTarget}：v3.2.1 起先比 \cid{encryptedSizeBytes > data.max_size}，超限记 \cid{payload_too_large}；缺 \cid{snapshot_id} 记 \cid{invalid}。成功返回 \verb|{method:"POST", url:oss.host, formFields:{…}}|，表单字段按插入序为 \cid{success_action_status}、\cid{policy}、\cid{x-oss-signature} 系列、\cid{key}、\cid{x-oss-security-token}、v3.1.0 起的裸归因字段、最后是 \cid{callback}；\cid{file} 由 \cid{uploadPostObject} 以 \cid{repo-snapshot.tar.gz.enc} 文件名追加。\cid{expiresAt}、\cid{maxBytes}、\cid{objectKey}、\cid{snapshotId}、\verb+callback:{mode:"oss-callback"}+ 是无消费方的死元数据。
+\cid{buildObjectUpload}\allowbreak\cid{Target}：v3.2.1 起先比 \cid{encryptedSizeBytes}\allowbreak\cid{ > }\allowbreak\cid{data.max_size}，超限记 \cid{payload_too_}\allowbreak\cid{large}；缺 \cid{snapshot_id} 记 \cid{invalid}。成功返回 \verb|{method:"POST",|\allowbreak\verb| url:oss.host,|\allowbreak\verb| formFields:{…}}|，表单字段按插入序为 \cid{success_action_}\allowbreak\cid{status}、\allowbreak\cid{policy}、\allowbreak\cid{x-oss-signature} 系列、\allowbreak\cid{key}、\allowbreak\cid{x-oss-security}\allowbreak\cid{-token}、\allowbreak v3.1.0 起的裸归因字段、\allowbreak 最后是 \cid{callback}；\allowbreak\cid{file} 由 \cid{uploadPost}\allowbreak\cid{Object} 以\allowbreak \cid{repo-snapshot.}\allowbreak\cid{tar.gz.enc} 文件名追加。\cid{expiresAt}、\allowbreak\cid{maxBytes}、\allowbreak\cid{objectKey}、\allowbreak\cid{snapshotId}、\allowbreak\verb+callback:{mode:+\allowbreak\verb+"oss-callback"}+ 是无消费方的死元数据。
 
 PUT 路径是死代码：\cid{uploadPutObject}（PUT、\cid{duplex:"half"}、\cid{createReadStream}、可选 checksum 头）自 v2.3.0 存在，分发按 \cid{target.method} 选择，而服务端产出的 target 全版本皆为 POST，PUT 从未走到。fetch 实现：v3.12.1 前用 \cid{objectUploadFetch ?? globalThis.fetch}，v3.12.2 起为 undici fetch 加 \cid{redirect:"error"}；OSS POST 不走 proxy-aware transport——v3.12.3 实测 credential GET 走代理而 POST 不走，受限网络下会出现 GET 通 POST 挂的不对称。响应只查 \cid{response.ok}：成功取 \cid{etag} 头，失败读 4KB 预览进 \cid{object_upload_failed}；callback 响应体从不解析。
 
@@ -456,13 +509,17 @@ key & v2.x–v2.12 & v2.13+ & v3.1+ & v3.6.1+ & v3.7.3+ \\
 
 \subsection{尺寸与失败路径汇总}
 
-单文件大于 1MiB 在扫描期即弃（\cid{large-file}，全版本）；扫描无总数上限。产物上限有三处：\cid{data.max_size}（v3.2.1 起，加密后比对，超限 \cid{payload_too_large}）、\cid{uploadKey.maxSizeBytes-16}（v3.2.3 起，gzip 输出逐条断言，超限抛 \cid{RepoSnapshotArtifactMaxSizeExceededError}）、v3.11.1 起的磁盘配额（驻留量约束，名义上限约 6GiB）。超限一律静默跳过。失败 reason 与去向见 \ref{sec:delta} 节：客户端产出 \cid{invalid}/\cid{key_expired}/\cid{payload_too_large}/\cid{object_upload_failed} 四种，\cid{base_not_found}/\cid{base_invalid}/\cid{hash_mismatch} 三种为死代码。
+单文件大于 1MiB 在扫描期即弃（\cid{large-file}，全版本）；扫描无总数上限。产物上限有三处：\cid{data.max_size}（v3.2.1 起，加密后比对，超限 \cid{payload_too_large}）、\allowbreak\cid{uploadKey.maxSizeBytes-16}\allowbreak（v3.2.3 起，gzip 输出逐条断言，超限抛 \cid{RepoSnapshotArtifactMaxSizeExceededError}）、v3.11.1 起的磁盘配额（驻留量约束，名义上限约 6GiB）。超限一律静默跳过。失败 reason 与去向见 \ref{sec:delta} 节：客户端产出 \cid{invalid}/\allowbreak\cid{key_expired}/\allowbreak\cid{payload_too_large}/\allowbreak\cid{object_upload_failed} 四种，\cid{base_not_found}/\allowbreak\cid{base_invalid}/\allowbreak\cid{hash_mismatch} 三种为死代码。
 
 \subsection{schema 版本}
 
 v2.x–v3.1.0 使用内联字面量 \cid{repo_snapshot_*/v1}（v3.1.0 的 prompt/delta 字段已是 /v2 形状但仍挂 /v1 名，属误标版本窗）。v3.1.1 一次完成模板化与 /v2 改名：manifest、prompt、delta、\cid{encrypted_artifact}、\cid{encryption_aad} 升 /v2，\cid{manifest_hash}、\cid{upload_key}、\cid{upload_target} 保 /v1，字段零变化。v3.11.1 新增 \cid{extra_manifest/v1} 与 \cid{extra_delta/v1}。
 
 \section{触发器}
+
+\begin{takeaway}
+v2.x 仅 prompt 发送触发；v3.x 增至五类直接触发（prompt、steer、V4 命令、任务终止、wiki 生成）与两类间接注入（cron、OffPeak）。无 timer/启动/文件监视触发。
+\end{takeaway}
 \label{sec:triggers}
 
 \subsection{v2.x：单触发}
@@ -475,16 +532,20 @@ v2.x–v3.1.0 使用内联字面量 \cid{repo_snapshot_*/v1}（v3.1.0 的 prompt
 \item prompt 发送（全部 41 个 3.x tag）：host RPC \cid{sendSession} 在 \cid{client.request} 前先调度 sidecar，content 为 prompt 全文；v3.7.3 起标 \cid{captureStage:"prompt"}。sendSession 双实现中只有 primary 带 sidecar，retry 不会双捕。
 \item steer 双触发（仅 v3.1.0–v3.3.6）：\cid{steerSession} 每次连发两次捕获，一次 content 为 \cid{"repo-wiki-update"}、一次为 prompt 全文；v3.4.0 删除。
 \item v4 命令包络（v3.6.1 起）：\cid{sendConversationCommandV4} 分发前先占 intent 槽，accepted 后 activate，失败 cancel。
-\item 任务终止（content 为 \cid{"repo-wiki-update"}）：经 \cid{captureTaskCompleteUpdate→captureRepoWikiSnapshot→captureBeforePrompt}，v3.7.3 起标 \cid{captureStage:"terminal"} 并附末次 \cid{queryId} 与 \cid{historyRoundCount}（取自 \cid{lastTerminalQuery}——服务端拿不到 prompt 内容，但能拿到末次 query id 与会话轮数）。驱动方式三易：v3.1.0–v3.3.6 由 renderer 的任务完成处理器 RPC 直调（该调用在 12 个 tag 中逐一确认存在，非休眠代码）；v3.4.0–v3.5.3 直调删除、仅剩远程 relay thunk；v3.6.1 起改由 host 相变驱动。error 相不捕获，\cid{phase==="error"} 守卫自 v3.6.1 首秀即在。
+\item 任务终止（content 为 \cid{"repo-wiki-update"}）：经 \cid{captureTaskCompleteUpdate}\allowbreak→\allowbreak\cid{captureRepoWikiSnapshot}\allowbreak→\allowbreak\cid{captureBeforePrompt}，v3.7.3 起标 \cid{captureStage:"terminal"} 并附末次 \cid{queryId} 与 \cid{historyRoundCount}（取自 \cid{lastTerminalQuery}——服务端拿不到 prompt 内容，但能拿到末次 query id 与会话轮数）。驱动方式三易：v3.1.0–v3.3.6 由 renderer 的任务完成处理器 RPC 直调（该调用在 12 个 tag 中逐一确认存在，非休眠代码）；v3.4.0–v3.5.3 直调删除、仅剩远程 relay thunk；v3.6.1 起改由 host 相变驱动。error 相不捕获，\cid{phase==="error"} 守卫自 v3.6.1 首秀即在。
 \item wiki 生成（全 3.x）：\cid{generate}/\cid{refreshExistingWikiAfterTaskComplete} 链 fire-and-forget 触发，content 为 \cid{"repo-wiki-generation"}；v3.12.3 新增的 \cid{regenerateFailedPages} 不触发。
 \item cron 注入（v3.4.0 起，间接）：scheduler 进程用 SQLite \cid{automations} 表 20s tick 派发，经 main 到 host 建任务再走 prompt 路径——它是 prompt 注入器而非独立捕获。
 \item OffPeakRun（v3.6.1 起，间接）：离峰 automation 调度，同 cron 路径。
-\item 远程 relay：\cid{createRemoteRepoWikiServiceRelay} 暴露 \cid{captureTaskCompleteUpdate} 与 \cid{refreshExistingWikiAfterTaskComplete} 两个 thunk，是 v3.4.0–v3.5.3 间任务终止触发的唯一调用方。
+\item 远程 relay：\cid{createRemoteRepoWiki}\allowbreak\cid{ServiceRelay}\allowbreak 暴露 \cid{captureTaskComplete}\allowbreak\cid{Update}\allowbreak 与 \cid{refreshExisting}\allowbreak\cid{WikiAfter}\allowbreak\cid{TaskComplete}\allowbreak 两个 thunk，是 v3.4.0–v3.5.3 间任务终止触发的唯一调用方。
 \end{itemize}
 
 负面结论（41 版全查）：没有 timer 驱动的捕获、没有启动 flush（\cid{pendingManager.initialize()} 只做 repair 与清理）、没有 file-watch/idle/shutdown/专用 IPC 触发。并发合并三代演进：串行 \cid{runsByWorkspaceKey}（v3.1.x）→ latest-wins 槽（v3.2.0–v3.5.3，中间 prompt 被丢）→ intent 队列 32 深、120s 超时（v3.6.1 起）。
 
 \section{开关与同意}
+
+\begin{takeaway}
+三阶段演化：opt-in → 静默翻转的 opt-out → 纯装饰。v3.1.0 起开关不门控任何行为，唯一写入方是 renderer 开关与 \cid{normalizeSettings}\allowbreak\cid{Patch}，不存在自动开启路径；实质同意门只剩服务端 credential 签发。
+\end{takeaway}
 
 \subsection{三阶段演化}
 
@@ -495,9 +556,9 @@ v2.x–v3.1.0 使用内联字面量 \cid{repo_snapshot_*/v1}（v3.1.0 的 prompt
 \label{fig:consent}
 \end{figure}
 
-阶段一（v2.3.0–v2.5.0），诚实的 opt-in。唯一读取点是 \cid{indexingEnabledProvider} 判 \cid{settings.repoSnapshotIndexingEnabled===true}（zod 默认 false），位于 \cid{captureBeforePromptUnsafe} 首行，门控捕获及下游全部上传；UI 开关绑原始 flag，显示与行为一致。
+阶段一（v2.3.0–v2.5.0），诚实的 opt-in。唯一读取点是 \cid{indexingEnabledProvider} 判\allowbreak \cid{settings.repoSnapshot}\allowbreak\cid{IndexingEnabled===true}（zod 默认 false），位于 \cid{captureBeforePromptUnsafe} 首行，门控捕获及下游全部上传；UI 开关绑原始 flag，显示与行为一致。
 
-阶段二（v2.6.0–v2.13.0），默认翻转的 opt-out。provider 改调 \cid{isRepoSnapshotIndexingEffectivelyEnabled}（八个版本逐字一致）：
+阶段二（v2.6.0–v2.13.0），默认翻转的 opt-out。provider 改调\allowbreak \cid{isRepoSnapshotIndexing}\allowbreak\cid{EffectivelyEnabled}\allowbreak（八个版本逐字一致）：
 
 \begin{code}
 function isRepoSnapshotIndexingEffectivelyEnabled(settings) {
@@ -509,9 +570,9 @@ function isRepoSnapshotIndexingEffectivelyEnabled(settings) {
 }
 \end{code}
 
-出厂默认（\cid{enabled=false}、\cid{userConfigured} 未设）下管线运行；只有显式 opt-out（\cid{enabled===false && userConfigured===true}）才停。\cid{normalizeSettingsPatch} 会在任何布尔写入路径上强置 \cid{userConfigured=true}；renderer 的开关仍绑原始 flag——显示 OFF 时管线在跑，用户拨过一次之后显示与行为才一致。
+出厂默认（\cid{enabled=false}、\cid{userConfigured} 未设）下管线运行；只有显式 opt-out（\allowbreak\cid{enabled===false}\allowbreak\cid{ && }\allowbreak\cid{userConfigured}\allowbreak\cid{===true}）才停。\cid{normalizeSettings}\allowbreak\cid{Patch}\allowbreak 会在任何布尔写入路径上强置 \cid{userConfigured}\allowbreak\cid{=true}；renderer 的开关仍绑原始 flag——显示 OFF 时管线在跑，用户拨过一次之后显示与行为才一致。
 
-阶段三（v3.1.0–v3.12.3），开关装饰化。\cid{RepoSnapshotSidecarService} 类体内对两个 flag 零引用（逐版枚举确认）。\cid{repoSnapshotIndexingEnabled} 的全部“消费点”只剩 schema 声明、\cid{normalizeSettingsPatch} 记账、设置页显示（v3.x 绑 \cid{enabled && userConfigured} 复合谓词——被静默开启的 flag 显示 OFF）以及 v3.11.1 起的 global-configs 白名单（取值被打进快照 payload）。捕获路径的实际前置条件全是运行时态：登录 token 存在、\cid{workspaceIdentity} 为空（remote workspace 永不捕获）、credential 非 null（\cid{data:null} 即中止——全版本仅存的实质同意门）、v3.11.1 起磁盘配额、产物不超过 maxSize。写入方审计显示，两个 flag 的唯一写入方是 renderer 开关与 \cid{normalizeSettingsPatch}，不存在任何自动开启路径。
+阶段三（v3.1.0–v3.12.3），开关装饰化。\cid{RepoSnapshotSidecarService}\allowbreak 类体内对两个 flag 零引用（逐版枚举确认）。\cid{repoSnapshotIndexingEnabled}\allowbreak 的全部”消费点”只剩 schema 声明、\allowbreak\cid{normalizeSettingsPatch}\allowbreak 记账、设置页显示（v3.x 绑 \cid{enabled && userConfigured} 复合谓词——被静默开启的 flag 显示 OFF）以及 v3.11.1 起的 global-configs 白名单（取值被打进快照 payload）。捕获路径的实际前置条件全是运行时态：登录 token 存在、\cid{workspaceIdentity} 为空（remote workspace 永不捕获）、credential 非 null（\cid{data:null} 即中止——全版本仅存的实质同意门）、v3.11.1 起磁盘配额、产物不超过 maxSize。写入方审计显示，两个 flag 的唯一写入方是 renderer 开关与 \cid{normalizeSettingsPatch}，不存在任何自动开启路径。
 
 \subsection{optimizeAgentExperienceEnabled：死配置}
 
@@ -523,14 +584,22 @@ sidecar 无条件实例化；remote workspace（\cid{workspaceIdentity} 为非�
 
 \section{repo-wiki 与功能动机}
 
-repo-wiki 是纯本地功能，已全链核实：存储为 \cid{repo-wiki/<sha256(workspaceKey)[:12]>/} 下的本地 JSON；生成走用户自己配置的 LLM provider（向用户 baseURL 拼 \cid{/chat/completions} 等端点，带 \cid{repo_wiki_*} querySource 标签）；删除只删本地文件；全语料没有任何 wiki REST 端点；wiki 代码从不读取 \cid{snapshot_id}/\cid{base_snapshot_id}。
+\begin{takeaway}
+repo-wiki 是纯本地功能，不消费快照结果；快照仅搭车其触发链。设置页”索引””instant grep””All data is stored locally”等文案均无本地实现——所谓索引就是这次上传。
+\end{takeaway}
 
-快照与 wiki 的关系是搭车：\cid{captureRepoWikiSnapshot} 只是对同一个 \cid{repoSnapshotSidecar.captureBeforePrompt} 的包装，wiki 不等上传、不消费结果，服务端拿到的只是 \cid{"repo-wiki-generation"}/\cid{"repo-wiki-update"} 哨兵串加 meta。删除确认框中“OSS repository upload records are not affected”指的就是本管线的上传记录。
+repo-wiki 是纯本地功能，已全链核实：存储为 \cid{repo-wiki/}\allowbreak\cid{<sha256(workspaceKey)[:12]>/} 下的本地 JSON；生成走用户自己配置的 LLM provider（向用户 baseURL 拼 \cid{/chat/completions} 等端点，带 \cid{repo_wiki_*} querySource 标签）；删除只删本地文件；全语料没有任何 wiki REST 端点；wiki 代码从不读取 \cid{snapshot_id}/\cid{base_snapshot_id}。
 
-所谓“索引”本体就是这次上传：全语料对 \cid{trigram}、\cid{buildIndex}、\cid{indexFiles}、\cid{grepIndex}、\cid{instantGrep*} 零命中（ripgrep/ugrep 命中是远程 workspace 的资源包）；\cid{instantGrepIndexingEnabled} 与 \cid{repoSnapshotIndexingEnabled} 均无本地功能消费点——“Index new folders”“instant grep”“All data is stored locally”这些文案没有任何本地实现支撑（可能服务端索引由上传驱动，文案与实现不符，见 \ref{sec:open} 节）。wiki 自己的 manifestHash 是 \cid{getWorkspaceOverview()} 本地扫描的陈旧性判据，与快照的 manifestHash 同名不同源。
+快照与 wiki 的关系是搭车：\cid{captureRepoWikiSnapshot}\allowbreak 只是对同一个 \cid{repoSnapshotSidecar.}\allowbreak\cid{captureBeforePrompt}\allowbreak 的包装，wiki 不等上传、不消费结果，服务端拿到的只是 \cid{“repo-wiki-generation”}/\allowbreak\cid{“repo-wiki-update”} 哨兵串加 meta。删除确认框中”OSS repository upload records are not affected”指的就是本管线的上传记录。
+
+所谓”索引”本体就是这次上传：全语料对 \cid{trigram}、\cid{buildIndex}、\cid{indexFiles}、\cid{grepIndex}、\allowbreak\cid{instantGrep*} 零命中（ripgrep/ugrep 命中是远程 workspace 的资源包）；\cid{instantGrepIndexingEnabled}\allowbreak 与 \cid{repoSnapshotIndexingEnabled}\allowbreak 均无本地功能消费点——“Index new folders”“instant grep”“All data is stored locally”这些文案没有任何本地实现支撑（可能服务端索引由上传驱动，文案与实现不符，见 \ref{sec:open} 节）。wiki 自己的 manifestHash 是 \cid{getWorkspaceOverview()} 本地扫描的陈旧性判据，与快照的 manifestHash 同名不同源。
 
 \section{披露、日志与遥测}
 \label{sec:disclosure}
+
+\begin{takeaway}
+55 个版本 UI 零披露；诊断导出刻意排除快照目录；ARMS 遥测只见 credential 端点 host+path。日志如实记录但用户不可见——拨动装饰开关本身被遥测。
+\end{takeaway}
 
 结论是全部 55 个版本的 UI 零披露：没有 label、toast、dialog、tooltip、onboarding consent、隐私声明、EULA 或设置描述告知工作区被快照加密上传。逐版 consent 面审计中唯一沾边的文案均不相关（conversationShare 警告、feedback 主动上传、Chrome-profile adminConsent、支付 ToS、插件 privacyPolicy）。
 
@@ -550,13 +619,13 @@ D & v3.2.0–v3.12.3 & 同上，另加“Improve experience…protect your data 
 \end{tabular}
 \end{table}
 
-证据锚：era B 字典键 \cid{settings.indexing.repoTitle}/\cid{settings.indexing.beta}/\cid{settings.indexing.repoDescription}（v2.3.0 与 v2.13.0 的 renderer bundle；zh-CN 字典里 repoTitle 为英文原文，非误植）；era C 字典与组件在 v3.1.0 与 v3.12.3 的 renderer 资源中；“OSS 仓库上传记录/OSS repository upload records”字面量仅见于 \cid{repoWiki.deleteConfirmDescription}；era D 文案在 \verb+settings.optimizeAgentExperience{,Description}+（v3.10.0 起带 analytics envelope）。
+证据锚：era B 字典键 \cid{settings.indexing.repoTitle}/\allowbreak\cid{settings.indexing.beta}/\allowbreak\cid{settings.indexing.}\allowbreak\cid{repoDescription}（v2.3.0 与 v2.13.0 的 renderer bundle；zh-CN 字典里 repoTitle 为英文原文，非误植）；era C 字典与组件在 v3.1.0 与 v3.12.3 的 renderer 资源中；”OSS 仓库上传记录/OSS repository upload records”字面量仅见于\allowbreak \cid{repoWiki.deleteConfirm}\allowbreak\cid{Description}；era D 文案在 \verb+settings.optimizeAgent+\allowbreak\verb+Experience{,Description}+（v3.10.0 起带 analytics envelope）。
 
 三个加重事实：其一，“All data is stored locally.”挂在 instantGrep 开关下，而该开关没有任何本地实现；其二，v3.x 的显示双条件使被静默开启的 flag 显示为 OFF；其三，“Improve experience”是唯一 consent 形状的文案，但作用域声明为 conversations。
 
-日志面如实记录、与 UI 的沉默形成对照：v2.x 有 \cid{info "indexing accepted"}，v3.1.x 有 \cid{info "repo snapshot upload accepted"}（v3.2.0 起删除）与含 userId 的 \cid{debug "...prompt meta prepared"}；logger 命名空间为 \cid{repoSnapshotSidecar}/\cid{repoSnapshotUploadClient}/\cid{repoSnapshotUploadWorker}，落 \cid{~/.zcode/cli/log/zcode-<date>.jsonl} 与 host 结构化日志。
+日志面如实记录、与 UI 的沉默形成对照：v2.x 有 \cid{info "indexing accepted"}，v3.1.x 有\allowbreak \cid{info "repo snapshot upload accepted"}\allowbreak（v3.2.0 起删除）与含 userId 的 \cid{debug "...prompt meta prepared"}；logger 命名空间为 \cid{repoSnapshotSidecar}/\allowbreak\cid{repoSnapshotUploadClient}/\allowbreak\cid{repoSnapshotUploadWorker}，落 \cid{~/.zcode/cli/log/}\allowbreak\cid{zcode-<date>.jsonl} 与 host 结构化日志。
 
-诊断导出刻意排除快照目录：排除表 \cid{["agent-config","certs","repo-snapshots","repo-wiki","sessions","session-bindings","checkpoints"]}（\cid{credentials.json} 另按名排除），导出的 zip 为纯本地文件。用户经诊断导出既看不到也发不出快照状态。feedback 上传走另一条 OSS 管线（边界串 \cid{----zcode-feedback-}、端点 \cid{/feedback/attachment/upload-credential}），勿与快照 uploader 混淆。
+诊断导出刻意排除快照目录：排除表覆盖 \cid{agent-config}、\cid{certs}、\cid{repo-snapshots}、\cid{repo-wiki}、\cid{sessions}、\cid{session-bindings}、\cid{checkpoints} 七项（\cid{credentials.json} 另按名排除），导出的 zip 为纯本地文件。用户经诊断导出既看不到也发不出快照状态。feedback 上传走另一条 OSS 管线（边界串 \cid{----zcode-feedback-}、端点 \cid{/feedback/attachment/upload-credential}），勿与快照 uploader 混淆。
 
 遥测方面，ARMS RUM（北京阿里云日志端点）经 \cid{perf_network_*} 指标看到 credential 调用的 host+path 与成败、时延；\cid{normalizeHttpInterface} 剥 query，\cid{workspace_id} 不进遥测。v3.12.3 起开关切换本身发 \cid{ui_action} span——拨动装饰开关的行为被遥测。
 
@@ -564,6 +633,10 @@ D & v3.2.0–v3.12.3 & 同上，另加“Improve experience…protect your data 
 
 \section{披露报告逐条裁决}
 \label{sec:adjudication}
+
+\begin{takeaway}
+披露报告核心指控对 v3.x 成立；v2.3.0–v2.5.0 不成立（当时是诚实的 opt-in）；v2.6.0–v2.13.0 半成立。若干技术细节与语料不符。
+\end{takeaway}
 
 \begin{longtable}{@{}p{6.2cm}p{9.0cm}@{}}
 \toprule
@@ -587,6 +660,10 @@ extra manifest（哈希全局配置进上传） & \textbf{v3.11.1+ 成立}（glo
 \end{longtable}
 
 \section{能力边界}
+
+\begin{takeaway}
+服务端持 RSA 私钥可解全部明文；OSS 见密文与裸归因但无法解密；客户端无法得知服务端是否接受上传；用户无任何客户端侧关闭手段——唯一旁路是退出登录或迁往 remote workspace。
+\end{takeaway}
 \label{sec:boundary}
 
 综合前述机制，可以回答每一方实际能做什么。
@@ -601,6 +678,10 @@ zcode 服务端掌握全部主动：它可以通过 \cid{data:null} 拒发 crede
 
 \section{未决问题与已知边界行为}
 \label{sec:open}
+
+\begin{takeaway}
+\cid{workspaceIdentity} 精确格式、v2.x 诊断导出行为等若干 REVIEW 项待查。已确认缺陷：等长改写对增量不可见、空工作区照常上传、自扫窗口、失败无日志等。
+\end{takeaway}
 
 \subsection{未决问题}
 
@@ -630,9 +711,13 @@ zcode 服务端掌握全部主动：它可以通过 \cid{data:null} 拒发 crede
 
 \section{方法与复核方式}
 
-语料为 ZCode linux-x64 全部 55 个入库版本（\cid{manifest/versions.json}，v2.2.0–v3.12.3；3.7.1/.2/.4 三版发布后从 CDN 撤下、按 published-but-unrecoverable 记账，版本边界用相邻可恢复版桥接）。每个版本以 \cid{v<tag>} 形式快照在内嵌 bare 仓 \cid{repo/} 中。
+\begin{takeaway}
+语料为 55 个版本的 extracted 树快照，逐版 tag 经 bare git 比对；v2.x 代码未压缩可直接读，v3.x 为 minified 单行需经 \cid{i(fn,"name")} 注解还原。全部断言可在语料中复核。
+\end{takeaway}
 
-分析分两层：其一是对 55 个 tag 做 28 项指示符的全量矩阵（结果在 \cid{notes/snapshot-tracking.json}），用于定位功能首秀与行为边界；其二是按主题对 bundle 做精读还原，v2.x 代码未压缩、v3.x 为 minified 单行（原始标识符经 \cid{s(fn,"name")}、\cid{i(fn,"name")}、\cid{a(fn,"name")} 注解恢复）。所有版本边界均按真实 tag 列表逐一核实——不存在的 tag（v3.2.0/v3.6.0/v3.7.0/v3.8.0/v3.9.0/v3.11.0）不计入零命中。
+语料为 ZCode linux-x64 全部 55 个入库版本（v2.2.0–v3.12.3；3.7.1/.2/.4 三版发布后从 CDN 撤下、按 published-but-unrecoverable 记账，版本边界用相邻可恢复版桥接）。每个版本的安装包经解包后以 \cid{v<tag>} 形式快照在语料 git 仓中。
+
+分析分两层：其一是对 55 个 tag 做 28 项指示符的全量矩阵，用于定位功能首秀与行为边界；其二是按主题对 bundle 做精读还原，v2.x 代码未压缩、v3.x 为 minified 单行（原始标识符经 \cid{s(fn,"name")}、\cid{i(fn,"name")}、\cid{a(fn,"name")} 注解恢复）。所有版本边界均按真实 tag 列表逐一核实——不存在的 tag（v3.2.0/v3.6.0/v3.7.0/v3.8.0/v3.9.0/v3.11.0）不计入零命中。
 
 文中每条断言均可复核，例如：
 
@@ -641,6 +726,6 @@ git -C repo show v3.12.3:app/out/host/index.js | grep -c uploadCredentialHandle
 git -C repo diff v3.2.0 v3.2.1 -- app/out/host/index.js
 \end{code}
 
-文中插图由 \cid{tools/render_snapshot_upload_figs.py} 生成（\cid{uv run --with matplotlib python tools/render_snapshot_upload_figs.py}），SVG 与 PDF 双份落在 \cid{notes/assets/}。
+文中插图由 matplotlib 脚本生成，SVG 与 PDF 双份落在 notes/assets/。
 
 \end{document}
