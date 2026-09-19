@@ -77,6 +77,10 @@
  "3.12.3": {
   "format": "deb"
  },
+ "3.14.0": {
+  "format": "deb",
+  "note": "latest-linux.yml feed pulled CDN-wide (404 for all versions incl. previously archived ones) as of 2026-09-19; size/releaseDate taken from deb HEAD last-modified; sha512 self-computed post-download"
+ },
  "3.2.0": {
   "format": "exe",
   "substitute_for": "linux-x64.deb",
