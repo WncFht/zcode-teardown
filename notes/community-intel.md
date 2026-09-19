@@ -6,7 +6,7 @@
 
 ## 来源与方法
 
-- **CDN `latest.yml`**：对全部 77 个已发现版本逐版抓取（linux 58 版全量 + 3.0.x/1.x/2.0/2.1 补全），内含 `releaseDate` 与中英双语 `releaseNotes`。这是**唯一覆盖全版本**的官方宣称源；原始文件存于 `tmp/lane-c12/yml/`，解析结果在 `tmp/lane-c12/yml-all.json`[^yml]。
+- **CDN `latest.yml`**：对全部 77 个已发现版本逐版抓取（linux 58 版全量 + 3.0.x/1.x/2.0/2.1 补全），内含 `releaseDate` 与中英双语 `releaseNotes`。这是**唯一覆盖全版本**的官方宣称源；原始文件经逐版抓取存档，解析结果汇总为结构化 JSON[^yml]。
 - **官网 changelog**（`zcode.z.ai/cn/changelog`）：仅列 **8 个版本**（3.8.1–3.12.3），与 yml 文本一致[^site-changelog]。
 - **官方文档站**：welcome/configuration/agents/plugin/skill 等 26 页[^docs]。
 - **feedback 仓** `zai-org/feedback`：README 标签体系 + issues（564 条）[^feedback]。
@@ -198,7 +198,7 @@ ACP 宣称：`zcode-acp` 二进制经 stdio JSON-RPC（`session/create|resume|se
 
 ### 参考文献
 
-[^yml]: ZCode CDN update metadata. `latest.yml`/`latest-linux.yml`，77 版，抓取于 2026-09-18. 原始文件见 `tmp/lane-c12/yml/`.
+[^yml]: ZCode CDN update metadata. `latest.yml`/`latest-linux.yml`，77 版，抓取于 2026-09-18.
 
 [^site-changelog]: ZCode. Changelog. [zcode.z.ai/cn/changelog](https://zcode.z.ai/cn/changelog)（仅 3.8.1–3.12.3）.
 
@@ -216,7 +216,7 @@ ACP 宣称：`zcode-acp` 二进制经 stdio JSON-RPC（`session/create|resume|se
 
 [^zhihu]: 智谱（官方）. ZCode 全面升级，GLM 最佳 Harness，让复杂任务自主交付。[zhuanlan.zhihu.com/p/2070504528416337941](https://zhuanlan.zhihu.com/p/2070504528416337941).
 
-[^vibe]: vibe-coding-labs. zcode-reverse-engineer. [github.com/vibe-coding-labs/zcode-reverse-engineer](https://github.com/vibe-coding-labs/zcode-reverse-engineer)（本地 clone `refs/zcode-reverse-engineer`）.
+[^vibe]: vibe-coding-labs. zcode-reverse-engineer. [github.com/vibe-coding-labs/zcode-reverse-engineer](https://github.com/vibe-coding-labs/zcode-reverse-engineer).
 
 [^vibe-endpoints]: 同上。docs/reference/api-endpoints.md.
 
@@ -236,7 +236,7 @@ ACP 宣称：`zcode-acp` 二进制经 stdio JSON-RPC（`session/create|resume|se
 
 [^eesel]: eesel AI. ZCode review: is Z.ai's GLM-5.2 harness worth it? [eesel.ai/blog/zcode-review](https://www.eesel.ai/blog/zcode-review).
 
-[^80aj]: 80aj. 智谱 Zcode 提示词被曝深度借鉴 Claude Code. [80aj.com/2026/06/14/zcode-claude-code/](https://www.80aj.com/2026/06/14/zcode-claude-code/)（linux.do 原帖 403 无法直取，见 tmp/lane-c12/report.md）.
+[^80aj]: 80aj. 智谱 Zcode 提示词被曝深度借鉴 Claude Code. [80aj.com/2026/06/14/zcode-claude-code/](https://www.80aj.com/2026/06/14/zcode-claude-code/)（linux.do 原帖 403 无法直取）.
 
 [^chenblog]: Gerald Chen. ZCode on HN's Front Page. [chenguangliang.com/en/posts/blog200_zcode-glm52-harness-hn-frontpage/](https://chenguangliang.com/en/posts/blog200_zcode-glm52-harness-hn-frontpage/).
 

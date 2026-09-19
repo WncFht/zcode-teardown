@@ -1,6 +1,6 @@
 # Lane C9 — protocol surface (ACP / IPC / endpoints / proxy)
 
-Scope: the wire-facing surface of all 55 extracted versions (2.2.0→3.12.3). Sources: `signatures/<ver>.json` (acp_methods / ipc_channels / endpoints), `diffs/*.md`, `extracted/<ver>/`, plus `tmp/lane-c9/rpc-tables.json` (prior pass: engine RPC registry extracted from each `glm/zcode.cjs`) and `tmp/lane-c9/*-matrix.md`. Caveat on signatures: `acp_methods` mixes three extractors — quoted `"ns/method"` strings, `method:'x'` literals, and `acp.*` telemetry events — so it covers at least four distinct protocols and picks up non-method literals; each attribution below was re-verified by grep.
+Scope: the wire-facing surface of all 55 extracted versions (2.2.0→3.12.3). Sources: `signatures/<ver>.json` (acp_methods / ipc_channels / endpoints), `diffs/*.md`, `extracted/<ver>/`, plus an RPC registry table extracted from each `glm/zcode.cjs` and per-version method matrices. Caveat on signatures: `acp_methods` mixes three extractors — quoted `"ns/method"` strings, `method:'x'` literals, and `acp.*` telemetry events — so it covers at least four distinct protocols and picks up non-method literals; each attribution below was re-verified by grep.
 
 ## ACP surface
 
@@ -88,7 +88,7 @@ Three roles:
 
 ## REVIEW
 
-- **Signature `acp_methods` ≠ wire method list.** It merges ≥4 protocols (agent RPC registry, CUA broker, browser-use MCP tools, MCP-schema literals) plus non-method literals (`acp.exe`, `MERGED`, `before/after`, CSS values). The authoritative 3.x method list is the `dr` registry extracted in `tmp/lane-c9/rpc-tables.json`; the 2.x list is the vendored ACP schema. Any per-method claim should cite the registry/schema, not raw signature presence.
+- **Signature `acp_methods` ≠ wire method list.** It merges ≥4 protocols (agent RPC registry, CUA broker, browser-use MCP tools, MCP-schema literals) plus non-method literals (`acp.exe`, `MERGED`, `before/after`, CSS values). The authoritative 3.x method list is the `dr` registry extracted from each `glm/zcode.cjs`; the 2.x list is the vendored ACP schema. Any per-method claim should cite the registry/schema, not raw signature presence.
 - **`v4/*` family undercounted by signatures** (only `v4/conversation/frame` matched the `method:` regex); the real family is ~17 methods — verified in zcode.cjs but its server-side role (remote relay vs in-app stream) is inferred from `clientMode`/`logEpoch` fields and host consumption, not from a spec doc.
 - **`zcode:` IPC enum↔handler** mapping verified for major clusters; the ~95 handler sites are all in one file but were sampled, not exhaustively line-indexed.
 - **2.x endpoint count is agent-vendor noise** — signature endpoints for 2.x (~2.3–2.7k after unified-extractor regen) include gemini-cli/codex/opencode/claude bundled code; app-owned endpoints were re-derived by grepping `app/out` only (~125 at 2.13.0). A clean per-source split was not recomputed for every 2.x version.

@@ -1,6 +1,6 @@
 # C8 引擎专题：agent 引擎架构全解析
 
-C8 topical lane —— 跨全语料回答引擎本身怎么组织、怎么演化。证据链主力：`tmp/lane-c8/wc-3.12.3/`（webcrack 反混淆 3.12.3 zcode.cjs → 2479 模块 + index.tsv + **toplevel**.js，函数名经 `a(x,"name")` 标注还原）、`tmp/lane-c8/zcode-acp-2.13.0/`（2.13.0 zcode-acp 内嵌 JS 按 SEA 资源拆出的 1371 个__带真实文件路径__的模块）、`extracted/<ver>/`、各版本 minified bundle 的 `a(x,"name")` 名称清单对比（见 /tmp/names-*.txt，下文注明处）。
+C8 topical lane —— 跨全语料回答引擎本身怎么组织、怎么演化。证据链主力：webcrack 反混淆输出（3.12.3 zcode.cjs → 2479 模块 + index.tsv + **toplevel**.js，函数名经 `a(x,"name")` 标注还原）、2.13.0 zcode-acp 内嵌 JS 按 SEA 资源拆出的 1371 个__带真实文件路径__的模块、`extracted/<ver>/`、各版本 minified bundle 的 `a(x,"name")` 名称清单对比。
 
 ## architecture（3.x 引擎内部）
 
@@ -85,7 +85,7 @@ provider 协议种类（字符串证据）：`anthropic-messages, openai-chat-co
 
 ### 2.x→3.x：同一 monorepo，换载体
 
-**决定性证据：2.13.0 zcode-acp 内嵌 JS 的模块路径与 3.x 逐层对应**（`tmp/lane-c8/zcode-acp-2.13.0/index.tsv`）：
+**决定性证据：2.13.0 zcode-acp 内嵌 JS 的模块路径与 3.x 逐层对应**（zcode-acp SEA 资源拆出的 index.tsv）：
 
 - `../core/dist/agent/turn-machine.js`、`turn-state.js`、`message-history.js`、`session-history-hydrator.js` —— TurnMachine 已在
 - `../core/dist/runtime/methods/` **43 个文件**：turn, turn-loop, turn-model-step(-usage), turn-stop, turn-tools, turn-tool-usage, turn-tool-warnings, turn-nested-model-usage, compact(-active,-persistence), microcompact, context(-usage), memory, memory-recall, rewind(-message), steering, streaming-recovery, streaming-tool-coordinator, streaming-tool-synthetic-result, subagent, target(-completion-verification), workspace-checkpoints, reasoning-stream, model(-status), session-title, hooks, mcp, resume, background, events, message-persistence, tool-part-*, usage-observability, config
@@ -142,5 +142,5 @@ provider 协议种类（字符串证据）：`anthropic-messages, openai-chat-co
 - **turn 机 vs AI SDK 关系**：TurnMachineImpl 是 ZCode 自有状态机（phases/toolCalls/pendingInputs），AI SDK streamText 的 stopWhen/prepareStep 循环被包进 turn-model-step——两层循环（turn 级 ZCode 状态机 + step 级 AI SDK）的确切边界由反混淆命名推断，未逐行走查 356 号 turn-model-step 实现确认。
 - **sessionResidentPool.acquireOperation 的粒度**：参数经 `mRs(t.params)` 提取 sessionIds，确认按会话租约；但"哪些方法被池化"依赖 params schema，未逐方法核对。
 - **`memoryDream` 语义**：`project_memory_dream` 操作类型存在（3.12.3），推断为后台记忆整理扫描（memoryDreamLastScanAtMs 节流字段佐证），具体 prompt/流程未读。
-- **名称清单方法局限**：`/tmp/names-*` 提取自 `X(y,"name")` 模式，混有少量属性键/字符串参数（如 "a0","abort"）；计数是__特征面代理指标__不是精确函数数；边界版本均为两端 grep 验证过的才敢写进表。
+- **名称清单方法局限**：逐版名称清单提取自 `X(y,"name")` 模式，混有少量属性键/字符串参数（如 "a0","abort"）；计数是__特征面代理指标__不是精确函数数；边界版本均为两端 grep 验证过的才敢写进表。
 - **3.2.0 bundle 收缩 0.44MB 原因未查明**：3.1.0→3.2.0 体积降但名称数升——可能是构建参数（tree-shaking/压缩）变化而非功能删除；未做二元 diff。
