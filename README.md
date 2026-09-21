@@ -46,6 +46,7 @@ ZCode 在每次发送 prompt 时将整个工作区打包加密上传至厂商服
 - [运行时](notes/runtime.md)——Electron 宿主与 bundled tools
 - [扩展系统](notes/extensions.md)——plugins / skills / commands / native modules
 - [外部宣称](notes/community-intel.md)——官方渠道与第三方社区的宣称档案
+- [开源包核对](notes/open-source-drop.md)——zai-org/ZCode 源码发布（3.14.0-squashed）与二进制逐版分析的交叉验证
 
 ### 快照上传报告
 
@@ -80,6 +81,12 @@ tools/extract_signatures.py <ver>      # 10 类签名 → signatures/<ver>.json
 - **3.7.1/3.7.2/3.7.4 三件 deb**：rolling-pull 撤下，CDN 侧仅剩中途断流的 206 缓存残影。
 
 官方元数据渠道迁移至应用内更新 manifest API（`zcode.z.ai/api/v1/releases/electron/manifest?platform=<plat>`，只服务最新版，双语 releaseNotes + 全平台 sha512）——其 3.14.0 deb sha512 与本仓自算值逐字节一致，官网 changelog 亦已列至 3.14.0。即：二进制证据面完整，披露渠道从静态逐版归档收缩为"仅最新版"的应用内接口。
+
+### 官方证据面状态（2026-09-21）
+
+**新增最大证据面：源码本体**。官方于 GitHub 放出 `zai-org/ZCode`（本仓 `refs/ZCode` 存档）：root `package.json` version = 3.14.0，Apache-2.0，pnpm monorepo，6973 文件 / ~103 万行。git 史压扁为两 commit（空树占位 + 单发 "feat: open source"），无逐版历史。
+
+注意口径：开源树**不逐字节等价**于 3.14.0 二进制——为发布二次清洗过（营销触达/claim_plan 领取面、14 个官方插件中的 11 个、CUA 真实实现、IM bot、web 远控宿主均未放出，内网地址与遥测端点已 scrub），局部又领先于二进制（post-3.14.0 开发点）。逐条核对与勘误见 [开源包核对](notes/open-source-drop.md)。
 
 ## 声明
 
