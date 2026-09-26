@@ -1,0 +1,28 @@
+node title | -82.51277pt 296.08708pt 312.45097pt 329.87328pt | 
+region laneC | -5.69046pt 133.7278pt 594.66216pt 281.68198pt | 
+region laneS | -5.69046pt 11.38092pt 594.66216pt 110.96552pt | 
+node tikz@f@1 | -62.1548pt 229.90189pt -11.95009pt 259.48563pt | adjacent=laneC
+node tikz@f@2 | -70.59581pt 53.50032pt -11.95009pt 83.0725pt | adjacent=laneS
+node tikz@f@3 | 0.0pt 116.06154pt 89.9476pt 128.63222pt | adjacent=laneC,adjacent=laneS
+node a1 | 6.66295pt 214.3683pt 101.4571pt 272.17378pt | class=qn,inside=laneC
+node a2 | 114.68346pt 214.2683pt 209.67763pt 272.27379pt | class=qn,inside=laneC
+node a3 | 222.90398pt 214.3683pt 317.69814pt 272.17378pt | class=qn,inside=laneC
+node a4 | 331.02449pt 214.3683pt 425.81865pt 272.17378pt | class=qn,inside=laneC
+node a5 | 439.145pt 214.3683pt 533.93916pt 272.17378pt | class=qn,inside=laneC
+node b1 | 103.40254pt 137.13022pt 198.1967pt 201.45724pt | inside=laneC
+node dy | 319.64313pt 154.61737pt 414.43729pt 183.9701pt | inside=laneC
+node s4 | 101.98004pt 40.80638pt 199.6192pt 95.76643pt | class=qsn,inside=laneS
+node s1 | 210.10056pt 40.80638pt 307.73972pt 95.76643pt | class=qsn,inside=laneS
+node s2 | 349.51883pt 40.80638pt 447.15799pt 95.76643pt | class=qsn,inside=laneS
+node s3 | 477.55617pt 40.80638pt 575.19533pt 95.76643pt | class=qsn,inside=laneS
+wire wa12 | 54.06003pt 243.27104pt 162.18054pt 243.27104pt | endpoint=a1,a2 via=laneC
+wire wa23 | 162.18054pt 243.27104pt 270.30106pt 243.27104pt | endpoint=a2,a3 via=laneC
+wire wa45 | 378.42157pt 243.27104pt 486.54208pt 243.27104pt | endpoint=a4,a5 via=laneC
+wire wa3s1 | 270.30106pt 214.3683pt 258.92014pt 95.76643pt | endpoint=a3,s1 via=laneC,laneS
+wire ws1a4 | 258.92014pt 95.76643pt 331.02449pt 243.27104pt | endpoint=s1,a4 via=laneS,laneC
+wire wa5s2 | 486.54208pt 214.3683pt 398.33841pt 95.76643pt | endpoint=a5,s2 via=laneC,laneS
+wire ws23 | 398.33841pt 68.2864pt 526.37575pt 68.2864pt | endpoint=s2,s3 via=laneS
+wire wb1s4 | 150.79962pt 137.13022pt 150.79962pt 95.76643pt | endpoint=b1,s4 via=laneC,laneS
+node mb | -82.51277pt -82.89348pt 489.66139pt -14.22636pt | 
+node tikz@f@4 | -39.85013pt -102.16682pt 446.99875pt -88.01476pt | adjacent=mb
+origin pgfid1 -82.51277pt -101.96683pt 595.01215pt 329.67328pt 614.295pt 794.96999pt

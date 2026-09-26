@@ -1,0 +1,58 @@
+% 第 1 章 · 开场 —— ZCode 个案 → 问题提出 → sweep 设计 → 头条数字 → 9 家选取 → 阅读导引
+\chapter{从一次拆除说起}
+\label{ch:intro}
+
+2026-09-19，ZCode v3.14.0 随源码开源，同版整体移除了一条存活 54 个版本、约四个月的管线：快照捕获、凭证签发、tar 打包、AES-256-CTR 加密、OSS PostObject 直传、callback 登记全部清零，\ep{/api/v1/snapshot/upload-credential} 字面量消失且无继任端点。被拆除的是一条工作区快照上传管线。
+
+它的工作方式很简单。用户每发一次 prompt，\fn{captureBeforePrompt} 先向 \ep{zcode.z.ai} 申请上传凭证——这是捕获路径的第一个网络动作，先于一切磁盘扫描——再用 \fn{git ls-files} 枚举整棵工作区树（v3.1.0 起 \ep{.git} 整树豁免全部过滤），打 tar、gzip、AES-256-CTR 加密，multipart 直传阿里云 OSS。登记不由客户端发出：OSS 服务端把填好的 callbackBody POST 回 \ep{zcode.z.ai}，客户端从不读回执。
+
+这条管线在设置页里换过两副面孔：v2.3.0–v2.13.0 叫 "Index Repositories for Instant Grep"，v3.1.0 起改为双开关 "Index new folders $<$50,000 files" 加 "instant grep (Beta)"，后者描述写着 "All data is stored locally."——两副面孔都没有上传字样；全语料不存在 trigram、buildIndex 之类的本地索引实现，「索引」本体就是这条上传管线。
+
+打包内容上，tar 内 \ep{meta/prompt.json} 存 prompt 原文全文，\ep{files/} 存工作区文件原文；而上传前的敏感信息过滤（下称卫生防线）只有 9 个基名、4 个后缀加 \ep{token|secret} 子串匹配，\ep{.aws/credentials}、\ep{.netrc}、\ep{kubeconfig} 漏网进包。
+
+同意门（consent gate，即用户可见可操作的知情同意控制）在存活期内四阶段走完：v2.3.0–v2.5.0 诚实 opt-in；v2.6.0 起 \fn{isRepoSnapshotIndexingEffectivelyEnabled} 对没拨过开关的用户判定开启，UI 仍显示 OFF；v3.1.0 起捕获路径不再读任何 flag，开关装饰化；v3.14.0 功能移除，同意门以「功能不存在」告终。存活期间唯一的间接承认是 v3.12.3 changelog 修复条目「优化仓库快照上传的内存占用」；开源树的诊断排除表则把 \ep{repo-snapshots}、\ep{repo-wiki} 二次改写为无人创建的孤儿目录名 \ep{repo}（\ep{exportLogs.ts:140-147}）。
+
+一家厂商把整棵工作区树当「本地索引」卖了四个月，又在开源当日拆掉。个案还是通行做法，区分的办法只有一个：把同一套证据标准施加到所有同类客户端。
+
+做法是：把 ZCode 一案沉淀的 28 项追踪指标泛化为 7 个扫描族（pack、crypto、cloud、egress、index、consent、urls），对 46 个闭源 agentic coding 客户端的官方安装包批量静态逆向。可疑命中一律走双镜对抗判定：evidence 镜沿调用链追到 socket 或 HTTP 调用点，证明内容确实离机；refute 镜负责证伪，死代码、未接线的 vendored SDK、已披露用户特性都在此列，两镜皆 refuted 才判 clean。确认目标再做版本考古，逐版本下载历史安装包扫特征字面量，二分定位管线首现版本。
+
+审计窗口 2026-09-22 至 09-25，全程静态分析，不运行目标、不绕登录、不访问付费端点。
+
+判定分三档。17 家确认存在隐藏上传：二进制内存在完整的收集、打包、传输、登记调用链，非死代码、非用户触发路径、无诚实 consent 面，厂商覆盖微软、腾讯、阿里、字节跳动、AWS、百度、京东、快手、讯飞。11 家披露失真或条件触发。
+
+7 家 clean 或用户触发合规，其中 Claude Code 为对照基线：凭证、直传、注册拓扑同样存在，但全程披露且多层 consent 门控。「有遥测」与「有隐藏上传」的分界在内容是否离机、consent 是否诚实。另有 Antigravity、Fitten、Raccoon 三家判 dormant：上传通道存在，但当前构建未接通或被禁用。
+
+17 家中 8 家连同 ZCode 基线进入逐家深剖，选取标准是形态覆盖而非体量。
+
+同一条三段式槽位在六家身上换了五种传输实现：ZCode 走 OSS PostObject，Qoder 走硬编码签名头的 multipart 直传 \ep{center.qoder.sh}，CodeBuddy IDE/CLI 走 COS STS，Trae 走 ImageX STS，Cursor 走 \ep{api2.cursor.sh} 的 packfile 分块 RPC。另三家走 API 直收——Copilot Chat 每次 \ep{@workspace} 语义搜索把文件全文 POST 到 \ep{api.github.com/external/code/ingest}，Kiro 每 3 秒向 \ep{runtime.*.kiro.dev} 发一批会话转录，MiniMax 每次物理 LLM 调用前把完整上下文 POST 到 \ep{/mavis/api/v1/eval/snapshot/report}。
+
+consent 失真同样整列覆盖：假开关、隐藏键、谎称文案、服务端热翻、零开关五种形态齐备。版本考古把九家的引入时点钉在图~\ref{fig:intro-timeline}：可考最早的 Trae 在最老可得构建 1.0.5431（2025-01-20）即已阳性，最晚的 MiniMax 3.0.58 引入于 2026-08-04；9 家无一家在引入管线时携带真 consent。
+
+\begin{figure}[!t]
+\centering
+\includegraphics[width=\linewidth,height=0.82\textheight,keepaspectratio]{f11-intro-timeline.pdf}
+\caption{九家深度目标的管线引入时点（ZCode 基线置顶，其余按首现日排序）。点型为事件性质，段色为门槛状态；灰色三角为最老可得构建即阳性，管线存在早于可考历史。}
+\label{fig:intro-timeline}
+\end{figure}
+
+全书五章四附录。第 2 章固定口径与流水线；第 3 章逐家解剖，ZCode 基线节为结构范本，其余八家按机制、载荷、consent 面、时间线四件套同构展开，节尾给证据锚点行；第 4 章把九家压进同一张横向矩阵；第 5 章归并模式与边界——服务端 flag 的当前取值、厂商是否实收留存，静态分析不可证，本报告不作断言。
+
+四个附录各收一类正文放不下但复核必需的材料：附录~\ref{app:matrix} 为 46 目标全量判定矩阵与一句话判定要点；附录~\ref{app:families} 为七族扫描定义与判定口径速查；附录~\ref{app:reproduce} 为复现命令与九个深度目标的获取解包清单（安装包 sha256 指纹表见 \ep{reproduce.md}）；附录~\ref{app:timeline} 为九家版本考古明细、覆盖缺口与 figure-pack.json 字段约定。
+
+正文引用约定三类：file:line 相对解包根 \ep{extracted/<tid>/}；\ep{v2.3.0:app/out/host/index.js:13762} 即「版本:解包相对路径:行号」三段；minified bundle 内位置记 \texttt{@} 后随字节偏移、\texttt{\textasciitilde} 后随近似行号。宣称对照一律先录英文原文，再落到函数或端点名。
+
+一切判定都建立在同一把尺子上：什么叫内容离机，什么叫诚实 consent，双镜怎么分工，签名二分怎么收口。这把尺子必须先于证据固定，否则 46 家只会得到 46 种说法。第 2 章先给出它。
+
+\begin{tcolorbox}[colback=vmist!25,colframe=vgray!60,title=术语约定,fonttitle=\small\bfseries,fontupper=\small,sharp corners,boxrule=0.4pt,breakable]
+\begin{itemize}
+\item \textbf{三段式管线}：服务端签发凭证 $\to$ 客户端直传 $\to$ 服务端登记回报；客户端从不持长期云凭证，也无从知道服务端收没收到。
+\item \textbf{点菜}：服务端决定本次收集哪些文件或路径，客户端无权选择——与「客户端写死清单」相对。
+\item \textbf{consent 面 / 同意门}：用户实际能看到、能操作的知情同意面（开关、弹窗、文案）。「consent 失真」指界面承诺与真实行为不符。
+\item \textbf{卫生 / 卫生防线}：上传前剔除密钥等敏感文件的过滤规则，及其完备程度。
+\item \textbf{同构}：结构相同、实现不同——同一条槽位形状换不同的传输载体。
+\item \textbf{左截断}：最老可获取的构建即已阳性，管线的首次引入早于可考历史。
+\item \textbf{双镜}：每个可疑命中同时接受证成（evidence）与证伪（refute）两个方向的复核，详见第 2 章。
+\end{itemize}
+\end{tcolorbox}
+
+\evid{notes/sweep/README.md（46 目标判定矩阵与结论速览）· notes/sweep/timeline.md（引入时点与覆盖缺口）· notes/sweep/deep-report.md（逐家深剖）· evidence/zcode/figure-pack.json}

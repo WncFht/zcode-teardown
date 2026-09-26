@@ -1,0 +1,40 @@
+node title | -54.06003pt 62.57591pt 445.27951pt 96.7596pt | 
+node htas | -26.74168pt 34.81538pt 60.8853pt 50.54283pt | adjacent=ctrl
+node hcli | 138.07947pt 34.716pt 248.87799pt 50.64221pt | adjacent=client
+node hsrv | 324.96846pt 34.56696pt 437.56471pt 50.79126pt | adjacent=server
+region ctrl | -51.21501pt 27.88356pt 85.35823pt -29.87546pt | 
+region client | 102.43004pt 27.88356pt 284.52744pt -473.73799pt | 
+region server | 301.59924pt 27.88356pt 460.93436pt -623.1149pt | 
+node tlslab | 286.84149pt -220.83246pt 299.28519pt -149.05319pt | adjacent=client,adjacent=server
+node t1 | -43.12892pt -20.5205pt 77.27254pt 20.5205pt | inside=ctrl
+node c1 | 121.89685pt -20.84846pt 265.06061pt 20.84846pt | inside=client
+node g | 121.89685pt -73.3467pt 265.06061pt -31.92879pt | inside=client
+node c2 | 121.89685pt -127.53822pt 265.06061pt -85.85735pt | inside=client
+node c3 | 121.89685pt -180.1466pt 265.06061pt -138.52444pt | inside=client
+node c4 | 121.89685pt -232.94402pt 265.06061pt -191.00166pt | inside=client
+node c5 | 121.89685pt -285.40762pt 265.06061pt -243.81357pt | inside=client
+node c6 | 121.89685pt -338.21257pt 265.06061pt -296.28325pt | inside=client
+node s1 | 309.68471pt -364.30443pt 452.84846pt -332.78777pt | inside=server
+node s2 | 309.68471pt -414.01682pt 452.84846pt -382.66pt | inside=server
+node s3 | 309.53471pt -464.02234pt 452.99846pt -432.23907pt | inside=server
+node s4 | 309.68471pt -518.83546pt 452.84846pt -477.01054pt | inside=server
+node s5 | 309.68471pt -562.02771pt 452.84846pt -530.55746pt | inside=server
+node s6 | 309.68471pt -616.89597pt 452.84846pt -575.2738pt | inside=server
+node c7 | 121.89685pt -463.76996pt 265.06061pt -432.49146pt | inside=client
+wire wctl | 17.07181pt 0.0pt 193.47873pt 0.0pt | endpoint=t1,c1 via=ctrl,client
+wire wg | 193.47873pt -20.84846pt 193.47873pt -31.92879pt | endpoint=c1,g via=client
+wire w1 | 265.06061pt 0.0pt 265.06061pt -106.69778pt | endpoint=c1,c2 via=client
+wire w2 | 193.47873pt -127.53822pt 193.47873pt -138.52444pt | endpoint=c2,c3 via=client
+wire w3 | 193.47873pt -180.1466pt 193.47873pt -191.00166pt | endpoint=c3,c4 via=client
+wire w4 | 193.47873pt -232.94402pt 193.47873pt -243.81357pt | endpoint=c4,c5 via=client
+wire w5 | 193.47873pt -285.40762pt 193.47873pt -296.28325pt | endpoint=c5,c6 via=client
+wire w6 | 265.06061pt -317.24791pt 309.68471pt -348.5461pt | endpoint=c6,s1 via=client,server
+wire w7 | 381.26659pt -364.30443pt 381.26659pt -382.66pt | endpoint=s1,s2 via=server
+wire w8 | 381.26659pt -414.01682pt 381.26659pt -432.23907pt | endpoint=s2,s3 via=server
+wire w9 | 309.53471pt -448.1307pt 265.06061pt -448.1307pt | endpoint=s3,c7 via=server,client
+wire w10 | 193.47873pt -463.76996pt 309.68471pt -497.923pt | endpoint=c7,s4 via=client,server
+wire w11 | 381.26659pt -518.83546pt 381.26659pt -530.55746pt | endpoint=s4,s5 via=server
+wire w12 | 381.26659pt -562.02771pt 381.26659pt -575.2738pt | endpoint=s5,s6 via=server
+node mb | -54.06003pt -737.16663pt 458.36319pt -637.34128pt | 
+node tikz@f@1 | 21.113pt -756.43997pt 383.19016pt -742.2879pt | adjacent=mb
+origin pgfid1 -54.06003pt -756.23997pt 460.93436pt 96.5596pt 614.295pt 794.96999pt

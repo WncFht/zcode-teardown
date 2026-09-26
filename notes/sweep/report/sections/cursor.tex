@@ -1,0 +1,67 @@
+% 第 3 章 · Cursor —— 三段式同构组·变体：RPC 分块直传，不经对象存储
+\section{Cursor（Anysphere）3.21.16 —— 影子仓 packfile}
+\label{sec:cursor}
+
+\begin{verdictbox}{vcoral}
+确认隐藏上传：codebase-telemetry v2 影子 git 仓随每个 agent 请求落 commit，300s 批打成真实 packfile 分块直传 api2.cursor.sh——三段式拓扑以 Connect-RPC 实现、不经对象存储；准入策略 RPC 抛错即放行。
+\end{verdictbox}
+
+Cursor 是同构组中唯一不走对象存储的变体。三段仍齐：服务端签发 \ep{upload\_uuid} 与分块大小、客户端分块直传、Complete 登记，只是载体换成 \ep{aiserver.v1.CodebaseSnapshotService} 的 Connect-RPC 流，打包物不是 tar 而是真实 git packfile——blob 即工作区文件明文，外加四个竞品 agent 的家目录。管线全程没有 consent 面，门控所要求的 privacy enum 4 本身可由首次启动引导（onboarding）里一张「Recommended」卡在 24 小时后静默写成。
+
+\begin{figure}[!t]
+\centering
+\includegraphics[width=\linewidth,height=0.82\textheight,keepaspectratio]{f03-cursor.pdf}
+\caption{Cursor 影子仓 packfile 管线（3.21.16）。三段式由 \ep{CreatePackfileUpload}、\ep{UploadPackfileChunk}、\ep{CompletePackfileUpload} 三个 RPC 完成；准入 \ep{CheckCodebaseTelemetryPolicy} fail-open（出错也放行），A2' 旁路由 Rust 模块直发同三端点，JS 层不可见。}
+\label{fig:cursor-pipe}
+\end{figure}
+
+\subsection{机制}
+
+钩子对拦截 agent 请求（图~\ref{fig:cursor-pipe}）。workbench 侧 contrib \fn{m9o} 挂 \fn{composerEventService.onDidSendRequest} 与 \fn{onDidFinishStreamChat}，请求首尾各发一次 \ep{cursor.codebaseTelemetry.triggerSnapshot}，reason 取 \ep{AGENT\_REQUEST\_START}/\ep{AGENT\_REQUEST\_END}，requestId 即本次请求的 generationUUID，去重表上限 100。ext 侧会话状态机只在双门同开时激活：服务端 flag \ep{codebase\_telemetry\_v2} 且 \fn{granularPrivacyModeRawEnum()} 返回 4。文件监听另路供给：\fn{recordChanges} 进 pendingChanges 队列，250ms 防抖后批量写盘。
+
+影子仓由 Rust native 模块 \ep{file\_service.linux-x64-gnu.node}（gix-snapshot crate）维护，落盘 \ep{\textasciitilde/.config/Cursor/User/snapshots}，ref 命名空间 \ep{refs/cursor/snapshots/}。每次快照对每个 codebase 落一条 commit，message 为 \ep{cursor-snapshot} 加一行 JSON \ep{\{"v":1,"reason":\{…\}\}}，reason 内嵌触发它的 requestId。\fn{SnapshotUploader} 以 \ep{intervalMs=300000}、\ep{initialDelayMs=30000} 轮询：\fn{generatePackfile} 把上次注册指针以来的全部新 commit 打成 packfile 写盘，传完即删，包只在批传窗口内存在。
+
+上传前的两道闸都握在服务端。准入 \ep{CheckCodebaseTelemetryPolicy} 把所在 repo 全部 remote 解析成 \ep{\{host,repository\_path\}} 上报——\ep{github.com/acme/secret-repo} 形明文；\fn{shouldAdmit} 对该 RPC 抛错判 allow，返回 \ep{telemetry\_allowed:false} 也仅当服务端开启 \ep{codebase\_protection\_client\_enforcement} 才真拦，客户端默认只记 advisory \ep{would\_block}。
+
+随后 \ep{RegisterCodebase} 先登记 \ep{codebase\_uuid} 与工作区绝对路径，\ep{CreatePackfileUpload} 报 \ep{pack\_id}/\ep{content\_sha256}/\ep{size\_bytes} 换 \ep{upload\_uuid} 与 \ep{chunk\_size\_bytes}，\ep{UploadPackfileChunk} 按服务端分块直传（客户端硬顶 64MiB/块，proto+gzip+Bearer），\ep{CompletePackfileUpload} 收尾。客户端侧只推本地指针——\ep{RegisterCodebaseSnapshot} 本版仅存 proto 声明、零调用点。
+
+A2' 旁路整条在 JS 层之外。codebase admit 后 \fn{GitHistorySession} 由同一 .node 内的 Rust Connect client 直发同三个 packfile 端点，revwalk 真实 \ep{.git} 近一个月 commit/tree/blob，加头 \ep{x-cursor-codebase-snapshot-rate-limit}；限主 worktree，门为子 flag \ep{codebase\_telemetry\_v2\_git\_history}。
+
+\subsection{载荷}
+
+packfile 的 blob 是明文文件内容。trackedCodebases 为 workspace folders 加四个 dot-dir（家目录隐藏目录）codebase：\ep{\textasciitilde/.cursor}（denylist，免 gate）、\ep{\textasciitilde/.claude}（allowlist 13 项，\ep{projects/}、\ep{history.jsonl}、\ep{plans/}、\ep{skills/} 在内）、\ep{\textasciitilde/.codex}（14 项，\ep{sessions/}、\ep{history.jsonl} 在内）、\ep{\textasciitilde/.agents}（\ep{skills/}）。
+
+每个 dot-dir 独立注册，\ep{kind=DOT\_CLAUDE} 等；收集规格由 \fn{Xce()} 硬编码进每个安装包，\ep{requiresGate} 项受子 flag \ep{codebase\_telemetry\_v2\_agent\_dot\_dirs} 门控，客户端默认 false，服务端下发即激活。竞品 agent 的会话史、记忆与 plans 随工作区代码同包上行。
+
+量级：首次 admit 传整棵工作树加 dot-dir allowlist，10MB--1GB+；增量包数十 KB--数 MB，每 300s 至多一批。8h 会话约 30 个 agent 请求产 60 条影子 commit。
+
+同 build 另有七条并行外发道，其中最直白的是索引 v1：\ep{FastUpdateFileV2} 往 \ep{repo42.cursor.sh} 的同一消息并带加密的 \ep{relativeWorkspacePath} 与 \ep{unencrypted\_relative\_workspace\_path} 加 \ep{contents} 明文——路径加密是摆设；FileSync 逐键发文件正文，\fn{isFileSyncEnabled} 全链不查 privacyMode。
+
+\subsection{consent 面}
+
+enum 4 由一次点击加 24 小时静默写成。首次启动引导强制二选一，分享卡 "I am fine with Cursor learning from my code!" 标 Recommended；点击写 \ep{eligibleForSnippetLearning}，\fn{hasEnoughTimeElapsedSinceOnboarding} 过 864e5ms 后客户端自写 \ep{enoughTimeElapsedSinceOnboarding}，\fn{inferPrivacyModeFromLegacyValues} 从此返回 \ep{USAGE\_CODEBASE\_TRAINING\_ALLOWED}，上传链自动接通，无二次确认。另一张卡仍承诺 "none of your questions or code will ever be stored"。
+
+最完整的披露编译在 bundle 里而从不渲染：\fn{KLc} egress map 逐字写着 "Every keystroke ships the file body, filename and edit history to Cursor's Tab model."。UI 侧对应位置只有谎称。packfile lane 与 dot-dir 收集在 privacy 页、security 页、enterprise 网络配置、论坛答复中零提及。宣称与线格式的三处直接矛盾见表~\ref{tab:cursor-claims}。
+
+\begin{table}[!t]
+\centering\small
+\begin{tabularx}{\linewidth}{@{}p{0.46\linewidth}X@{}}
+\toprule
+宣称（逐字，出处见证据锚点） & 二进制内实际行为 \\
+\midrule
+"File paths are encrypted before being sent to our servers" & \ep{FastUpdateFileV2} 同包并发明文路径字段与明文 \ep{contents} \\
+"All data is stored locally"（Settings · Index Repositories） & 索引上传逐文件明文全文直传 \ep{repo42.cursor.sh} \\
+"two ways data leaves your local environment: LLM requests, Cloud Agents" & 同 build 另有至少 6 条外发道：packfile、FileSync、debug-zip、\ep{IngestConversation} 等 \\
+\bottomrule
+\end{tabularx}
+\caption{宣称与线格式的三处直接矛盾。}
+\label{tab:cursor-claims}
+\end{table}
+
+\subsection{时间线}
+
+0.36.0（2024-07-03）仅本地索引 → 1.0.1（2025-07-02）Lane B 调试 zip 首个确认接线 → 2.5.17（2026-02-17）\ep{CodebaseSnapshotService} proto 字面量首现，三个 bundle 各一次、零调用方 → 2.5.26（02-26）最后未接线版 → 2.6.11（03-03）首个完整接线：grpc 全调用、\ep{codebase\_telemetry\_v2} 与 enum4 双门、\fn{triggerSnapshot}、\ep{\textasciitilde/.cursor/snapshots} → 3.21.16（2026-09-19）加三个子 flag（客户端默认全 false）、\ep{CheckCodebaseTelemetryPolicy}、\fn{GitHistoryUploader} 与身份感知 session。
+
+门槛演化只朝放宽走：新 lane 随 flag 休眠进包，gate 读取失败保持旧值，只会松不会紧。
+
+\evid{evidence/cursor/figure-pack.json · notes/sweep/cursor.md · \ep{extracted/cursor/…/cursor-retrieval/dist/main.js}（\fn{Xce}/\fn{KLc}/\fn{Vme}）· \ep{…/cursor-always-local/dist/main.js}（\fn{isFileSyncEnabled}）· workbench.desktop.main.js:19516（864e5 升级）}

@@ -1,0 +1,56 @@
+node title | -96.73915pt 124.11905pt 392.78737pt 143.33655pt | class=txt
+region colC | -8.5359pt -483.69664pt 176.40692pt 89.62596pt | 
+region colS | 196.32375pt -483.69664pt 298.7538pt 89.62596pt | adjacent=colC
+region colX | 321.51608pt -483.69664pt 418.25523pt 89.62596pt | adjacent=colS
+node hc | 14.03394pt 96.14853pt 153.83707pt 107.57321pt | adjacent=colC
+node hs | 191.29622pt 96.04013pt 303.78133pt 107.68161pt | adjacent=colS
+node hx | 330.61299pt 96.29759pt 409.15834pt 107.42415pt | adjacent=colX
+node tm | 16.6216pt 49.8049pt 108.5703pt 81.07788pt | inside=colC
+node ws | 23.73479pt 8.76631pt 101.4571pt 39.60368pt | inside=colC
+node so | 119.05142pt 8.50635pt 174.01147pt 39.86365pt | inside=colC
+node ib | 16.6216pt -64.46866pt 108.5703pt -32.27048pt | class=cb,inside=colC
+node jk | 16.6216pt -126.90741pt 108.5703pt -75.10724pt | inside=colC
+node gb | 121.89667pt -120.70775pt 171.16623pt -81.3069pt | inside=colC
+node p2 | 16.6216pt -172.58917pt 108.5703pt -140.39099pt | class=cb,inside=colC
+node tk | 16.6216pt -215.2683pt 108.5703pt -183.07011pt | class=cb,inside=colC
+node kk | 16.6216pt -262.21513pt 108.5703pt -230.01695pt | inside=colC
+node lb | 16.6216pt -304.89426pt 108.5703pt -272.69608pt | class=cb,inside=colC
+node jb | 16.6216pt -390.25249pt 108.5703pt -358.0543pt | class=cb,inside=colC
+node ck | 198.7192pt 51.47638pt 296.35835pt 79.4064pt | inside=colS
+node sts | 198.7192pt -213.13422pt 296.35835pt -185.2042pt | inside=colS
+node cbk | 198.7192pt -304.40657pt 296.35835pt -273.18376pt | inside=colS
+node tp | 198.7192pt -342.59428pt 296.35835pt -314.66426pt | inside=colS
+node tf | 198.7192pt -389.57985pt 296.35835pt -358.72694pt | inside=colS
+node ts | 198.7192pt -433.64297pt 296.35835pt -405.71295pt | inside=colS
+node tb | 198.7192pt -474.89937pt 296.35835pt -446.96935pt | inside=colS
+node ix | 326.75655pt -265.06036pt 413.01479pt -227.17172pt | inside=colX
+wire w1 | 108.5703pt 65.44139pt 198.7192pt 65.44139pt | endpoint=tm,ck via=colC,colS
+node w1l | 145.43826pt 70.8949pt 159.00644pt 78.19717pt | inside=colC
+wire w2 | 198.7192pt 65.44139pt 184.94283pt 65.44139pt 184.94283pt -48.36957pt 108.5703pt -48.36957pt | endpoint=ck,ib via=colS,colC
+wire w3 | 62.59595pt 8.76631pt 62.59595pt -32.27048pt | endpoint=ws,ib via=colC
+node w3l | 66.00381pt -16.64523pt 90.48627pt -8.96204pt | inside=colC
+wire w4 | 146.53145pt 8.50635pt 146.53145pt -28.45274pt 102.43004pt -28.45274pt 102.43004pt -32.72047pt | endpoint=so,ib via=colC
+wire w5 | 62.59595pt -64.46866pt 62.59595pt -75.10724pt | endpoint=ib,jk via=colC
+wire w6 | 108.5703pt -48.36957pt 146.53145pt -48.36957pt 146.53145pt -81.3069pt | endpoint=ib,gb via=colC
+wire w7 | 62.59595pt -126.90741pt 62.59595pt -140.39099pt | endpoint=jk,p2 via=colC
+wire w8 | 146.53145pt -120.70775pt 146.53145pt -156.49008pt 108.5703pt -156.49008pt | endpoint=gb,p2 via=colC
+wire w9 | 62.59595pt -172.58917pt 62.59595pt -183.07011pt | endpoint=p2,tk via=colC
+wire w10 | 108.5703pt -199.1692pt 198.7192pt -199.1692pt | endpoint=tk,sts via=colC,colS
+node w10l | 129.01877pt -193.17085pt 172.58047pt -185.25026pt | inside=colC
+wire w11 | 62.59595pt -215.2683pt 62.59595pt -230.01695pt | endpoint=tk,kk via=colC
+wire w12 | 108.5703pt -246.11604pt 326.75655pt -246.11604pt | endpoint=kk,ix via=colC,colS,colX
+node w12l | 227.24849pt -235.7782pt 267.82906pt -228.00116pt | inside=colS
+wire w13 | 62.59595pt -262.21513pt 62.59595pt -272.69608pt | endpoint=kk,lb via=colC
+wire w14 | 108.5703pt -288.79517pt 198.7192pt -288.79517pt | endpoint=lb,cbk via=colC,colS
+wire w15 | 369.88567pt -265.06036pt 369.88567pt -310.13472pt 62.59595pt -310.13472pt 62.59595pt -304.89426pt | endpoint=ix,lb via=colX,colS,colC
+node w15l | 328.7887pt -309.61198pt 354.07715pt -302.122pt | inside=colX
+wire w16 | 16.6216pt -48.36957pt 0.0pt -48.36957pt 0.0pt -374.1534pt 16.6216pt -374.1534pt | endpoint=ib,jb via=colC
+node bus | 139.84526pt -376.57185pt 144.68217pt -371.73494pt | inside=colC
+wire w17 | 108.5703pt -374.1534pt 142.26372pt -374.1534pt | endpoint=jb,bus via=colC
+wire w18 | 142.26372pt -374.1534pt 186.36555pt -374.1534pt 186.36555pt -328.62927pt 198.7192pt -328.62927pt | endpoint=bus,tp via=colC,colS
+wire w19 | 142.26372pt -374.1534pt 198.7192pt -374.1534pt | endpoint=bus,tf via=colC,colS
+wire w20 | 142.26372pt -374.1534pt 186.36555pt -374.1534pt 186.36555pt -419.67796pt 198.7192pt -419.67796pt | endpoint=bus,ts via=colC,colS
+wire w21 | 142.26372pt -374.1534pt 186.36555pt -374.1534pt 186.36555pt -460.93436pt 198.7192pt -460.93436pt | endpoint=bus,tb via=colC,colS
+node mb | -96.73915pt -582.44977pt 418.52953pt -496.50027pt | 
+node tikz@f@1 | -25.3955pt -601.72311pt 347.18587pt -587.57104pt | adjacent=mb
+origin pgfid1 -96.73915pt -601.52312pt 418.52953pt 143.13655pt 614.295pt 794.96999pt

@@ -1,0 +1,82 @@
+% 第 2 章 · 审计方法
+\chapter{审计方法}
+\label{ch:method}
+
+ZCode 管线拆除之后只剩一个问题：孤例还是通行做法。回答方式是把 ZCode 快照管线的 28 项追踪指标泛化成 7 个扫描族，对 46 个闭源 agentic coding 客户端跑同一条流水线：获取 $\to$ 7 族扫描 $\to$ 双镜对抗核查 $\to$ 5 条深潜线 $\to$ 判定。
+
+全程约 600 次 agent 轮次（含限流重试与多轮续跑），扫描脚本存档在 \ep{tools/sweep/agent-teardown-sweep.js}。判定真值来自三份 workflow 运行日志——\ep{wf\_8ed8c294-94a}（判定）、\ep{wf\_686c7520-9ca}（版本考古）、\ep{wf\_57214b00-077}（深剖）——按目标拆分为 \ep{evidence/<tid>/journal-digest.json}。
+
+\section{语料与流水线}
+
+语料仓（非 git，下文记作 \ep{<corpus>/}，本文所有 \ep{evidence/}、\ep{extracted/} 相对路径均以它为根）：installers 20G、extracted 12G、evidence 2.8G。46 个目标按形态分四类——electron-ide、npm-cli、vsix、desktop-native。获取渠道的优先级为官方 CDN/官网 $>$ 公共包仓库 $>$ 应用内更新 API，全部无鉴权；安装包 $\le$1GB（个别覆写：PiecesOS snap 1.9G、MiniMax win build 1.2G），解出 $\le$2GB。
+
+解包按壳选型：deb 走 \fn{ar x} 加 data.tar；vsix/zip/NSIS/snap 一律 \fn{7z x}；asar 走 \fn{npx asar extract}；Bun 单文件 ELF（claude-code、droid、amp、codearts-cli、mimo）用 \fn{objcopy -{}-dump-section .bun} 切出编译后的 JS 模块图；Go 二进制靠 pclntab 恢复符号。
+
+两个坑反复出现：marketplace vspackage 偶尔返回 gzip 包裹的 zip；npm 上架包常是 stub 壳，真身在 \ep{optionalDependencies} 的 \ep{-linux-x64} 平台包。无 Linux 构建的桌面端（astudio、minimax-desktop、inscode）以 Windows NSIS 替代——JS 载荷与平台无关。
+
+\section{七族扫描}
+
+对每棵解包树跑 \fn{rg -F -n -i}，命中记 \ep{file:line}、snippet 与 assessment；二进制文件用 \fn{rg -a} 或 \fn{strings} 复核。七族定义见表~\ref{tab:scanfam}，族名与检测目标逐字取自扫描脚本。
+
+\begin{table}[!htb]
+\centering\small
+\begin{tabularx}{\linewidth}{@{}l >{\raggedright\arraybackslash}X >{\raggedright\arraybackslash}X@{}}
+\toprule
+族 & 检测目标（脚本原文） & 代表字面量 \\
+\midrule
+pack & tar/gzip/zip 打包 & \ep{createGzip} \ep{tar-stream} \ep{workspaceSnapshot} \\
+crypto & aes-256-*/rsa-oaep/keyWrap/SPKI & \ep{aes-256-ctr} \ep{rsa-oaep} \ep{publicEncrypt} \\
+cloud & OSS/COS/S3/OBS/BOS presigned + STS + PostObject + callback & \ep{aliyuncs} \ep{x-oss} \ep{upload-credential} \\
+egress & egress 端点 & \ep{upload} \ep{ingest} \ep{telemetry} \ep{posthog} \ep{beacon} \\
+index & 工作区索引/遍历 & \ep{codebase} \ep{readdir} \ep{ripgrep} \ep{fileHash} \\
+consent & consent/UI 文案 & \ep{optOut} \ep{indexingEnabled} \ep{dataCollection} \\
+urls & URL 字面量 & 全量普查，标记 upload/ingest/credential/sts 形端点 \\
+\bottomrule
+\end{tabularx}
+\caption{七个扫描族：族名与检测目标逐字取自 \ep{tools/sweep/README.md}，字面量列为代表性样本。}
+\label{tab:scanfam}
+\end{table}
+
+vendored \ep{node\_modules} 里的命中不算数——同一份字面量在 aws-sdk 里与在应用代码里含义相反，判定只认应用侧调用点。
+
+\section{判定口径：双镜对抗}
+
+每个 \ep{suspicious} 命中接受两个方向的核查。evidence 镜负责证成：追到 socket/HTTP 调用点，确认载荷含文件字节或会话内容，即「用户内容确实离机」。refute 镜负责证伪：死代码、vendored SDK 未接线、已披露的用户主动特性（日志上传、反馈表单），任一成立即 refuted。两镜均 refuted 才判 clean；\ep{refuted} 与 \ep{\_lens} 在调用点侧绑定，不采信 agent 自报字段。
+
+未 refuted 的目标进 5 条深潜 lane：pipeline（触发到注册的端到端链，每跳 file:line）、consent（开关是否真门控、默认值、文案是否如实）、scope（载荷范围与过滤清单原文）、exfil（凭证签发、auth、回调、谁能解密）、altpaths（全部外发通道普查）。
+
+判定落七档：
+
+\begin{itemize}
+\item \ep{hidden-upload}：工作区/会话内容离机，无 consent 面或 consent 失真（placebo 开关、understated 文案）；
+\item \ep{under-disclosed opt-in}：有真门控开关但 UI 文案不提上传；
+\item \ep{user-initiated}：显式用户触发（日志上传、反馈、handoff）；
+\item \ep{disclosed-egress}：披露且 opt-in；
+\item \ep{dormant}：管线存在但此 build 无条件禁用；
+\item \ep{clean}：双镜 refuted，无内容外发管线；
+\item \ep{partial / gated}：覆盖不完整 / 获取被拦。
+\end{itemize}
+
+\begin{verdictbox}{vgold}
+判定边界只有两条：内容是否离机，consent 是否诚实有效。「有遥测」$\neq$「有隐藏上传」——\ep{upload\_pipeline=true} 只表示存在外发通道（元数据遥测即算），判定必须读 \ep{finding} 文本与 consent lane。
+\end{verdictbox}
+
+\section{版本考古}
+
+对 8 个确认目标定位引入时点：逐版本下载历史安装包、解包、\fn{rg -a -F} 扫特征字面量，二分首个阳性构建。产出三种精度。
+
+点边界：末阴与首阳相邻，直接给首现版本（MiniMax 3.0.57 $\to$ 3.0.58）。
+
+开区间：边界内存在未探测或未发布构建号，记 $(a,b]$——Cursor Lane B \ep{(0.44.9,1.0.1]} 内 idx 41--79 未探测；Copilot Chat 的 marketplace 列表在 0.45.1 $\to$ 0.48.1 之间零条目，v0.45.2/v0.46.0/v0.47.0/v0.48.0 与 3 个日期预发布号共 7 个探针全 404。
+
+左截断：最老可获取构建即阳性时记「$\le$ 首版」，含义是引入早于可获取历史、是否首发即带不可判定（Trae $\le$1.0.5431；CodeBuddy IDE codebase lane $\le$0.1.8.2412962）。
+
+考古同时给出引入姿态。schema/宿主先行：Cursor 2.5.17 先发零调用者 proto，2.6.11 才接线；MiniMax 3.0.53 先发行宿主模块，3.0.58 注入 eval capture。落地即完全体：Copilot Chat 0.48.1 首个可获取携带版已是完整实现。8 个对象无一家在引入时携带 consent 面。
+
+\section{边界与伦理}
+
+全程静态分析：不运行目标二进制，不绕登录与鉴权，不访问付费端点，不向 \ep{/tmp} 写。审计窗口 2026-09-22 至 09-25；版本号以窗口内可获取构建为准，厂商后续发版不改动本文锚点。
+
+静态分析划得出能力边界。「confirmed」的严格含义是：二进制内存在完整的「收集 $\to$ 打包 $\to$（凭证签发 $\to$）传输 $\to$（注册）」调用链，且非死代码、非用户触发路径、无诚实 consent 面。服务端 flag 的当前取值、厂商侧是否实收与留存，静态分析不可证，本报告不作断言。获取失败的目标不缺席：Rovo 的载荷在 \ep{as.atlassian.com} 令牌门后未获取，CodeFuse 分发渠道已关死仅剩替代包，blocker 逐条记录在各目标页。
+
+\evid{tools/sweep/README.md · notes/sweep/reproduce.md · notes/sweep/timeline.md · journal wf\_8ed8c294-94a}

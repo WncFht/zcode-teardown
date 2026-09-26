@@ -16,13 +16,14 @@ ZCode 在每次发送 prompt 时将整个工作区打包加密上传至厂商服
 
 ## 仓库结构
 
-| 路径          | 内容                                                             |
-| ------------- | ---------------------------------------------------------------- |
-| `manifest/`   | 版本清单与来源记账（56/59 版，3 版 CDN 撤下不可恢复）            |
-| `signatures/` | 每版签名快照（models/endpoints/feature_flags/env_vars 等 10 类） |
-| `notes/`      | 分析笔记（13 篇 markdown + 1 篇 LaTeX 报告 + 图表资源）          |
-| `tools/`      | 管道脚本（fetch → unpack → manifest → commit → signature）       |
-| `docs/`       | 任务复盘                                                         |
+| 路径           | 内容                                                             |
+| -------------- | ---------------------------------------------------------------- |
+| `manifest/`    | 版本清单与来源记账（56/59 版，3 版 CDN 撤下不可恢复）            |
+| `signatures/`  | 每版签名快照（models/endpoints/feature_flags/env_vars 等 10 类） |
+| `notes/`       | 分析笔记（13 篇 markdown + 1 篇 LaTeX 报告 + 图表资源）          |
+| `tools/`       | 管道脚本（fetch → unpack → manifest → commit → signature）       |
+| `tools/sweep/` | 多客户端隐藏上传扫描流水线（Workflow 脚本 + 判定口径）           |
+| `docs/`        | 任务复盘                                                         |
 
 不入库的可再生产出：`installers/`、`extracted/`、`repo/`（bare git 语料库）、`diffs/`、`tmp/`。
 
@@ -47,6 +48,10 @@ ZCode 在每次发送 prompt 时将整个工作区打包加密上传至厂商服
 - [扩展系统](notes/extensions.md)——plugins / skills / commands / native modules
 - [外部宣称](notes/community-intel.md)——官方渠道与第三方社区的宣称档案
 - [开源包核对](notes/open-source-drop.md)——zai-org/ZCode 源码发布（3.14.0-squashed）与二进制逐版分析的交叉验证
+
+### 横向扫描
+
+- [多客户端隐藏上传扫描](notes/sweep/README.md)——45 个闭源 agentic coding 客户端的同款机制批量审计（17 个确认隐藏上传、11 个披露失真，含 Cursor/Qoder/MiniMax Desktop/Copilot Chat 等）
 
 ### 快照上传报告
 

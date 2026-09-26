@@ -1,0 +1,47 @@
+\section{CodeBuddy CLI（腾讯）v2.157.0 —— 服务端点名式日志收集}
+\label{sec:codebuddy-cli}
+
+\begin{verdictbox}{vcoral}
+确认隐藏上传：零本地开关的纯服务端遥控管线——config 下发激活参数、任务队列点名、zip 明文直传腾讯 COS、HMAC 签名回报；与 ZCode 三段式同构，载荷换成全机日志。
+\end{verdictbox}
+
+npm 包 \ep{@tencent-ai/codebuddy-code}。链路与 ZCode 逐段对应：GET \ep{/v2/logs/upload\_credentials} 签发 STS、\fn{putObject} 直传对象存储、PUT \ep{/v2/logs/upload\_task} 回报登记。差别在载荷与服务端角色：上行的是 \ep{\textasciitilde/.codebuddy/logs} 下全部工作区的日志文件而非工作区树，且服务端不止发凭证——它通过任务队列逐次点名收哪一批。是否激活没有任何本地默认值：全包 \ep{product*.json} 不含 \ep{log} 键（dist/codebuddy.js:2971）。
+
+\begin{figure}[!t]
+\centering
+\includegraphics[width=\linewidth,height=0.82\textheight,keepaspectratio]{f05-codebuddy-cli.pdf}
+\caption{CodeBuddy CLI 日志收集回路（v2.157.0）。门控全部在服务端控制面：\ep{/v3/config} 推送激活参数、\ep{upload\_task/check} 任务队列点名、\ep{upload\_credentials} 签发 STS、\ep{upload\_task?state=} HMAC 回报登记，回报后定时器进入下一拍；客户端唯一本地逃逸是 \ep{--serve}。}
+\label{fig:codebuddy-cli-pipe}
+\end{figure}
+
+\subsection{机制}
+
+服务端点名回路四段全部握在服务端控制面（图~\ref{fig:codebuddy-cli-pipe}）。\fn{UploadService.init}（@PostConstruct）订阅 \fn{productManager.configuration}——GET \ep{/v3/config} 的响应下发 \ep{log.upload.\{enabled,interval,allowedEnvironments\}}、\ep{log.level}、\ep{log.maxRetention}。\ep{interval} 为正数即经 \fn{startAutoUploadCheck} 激活 \fn{IntervalTimer.cancelAndSet}（=setInterval，dist-server/codebuddy.js:1）；\ep{allowedEnvironments} 校验失败仍激活——fail-open（出错也放行）。
+
+每拍 \fn{doCheckAndUpload} 经 \fn{getUploadTasks} 轮询 GET \ep{/v2/logs/upload\_task/check}，query 里 \ep{state} 是 \fn{createHmac} 以硬编码密钥 \ep{log\_collection\_secret\_key} 对 \ep{\{ClientType,Platform,UID,Timestamp\}} 的签名（6929.codebuddy.js:223）。
+
+响应 \ep{tasks[]} 里每个 \ep{taskId} 触发一次 \fn{processUploadTask}：打包后 GET \ep{/v2/logs/upload\_credentials} 取 \ep{\{bucket,region,url,path,tmpSecretId,tmpSecretKey,token\}}，再由 \fn{cos-nodejs-sdk-v5} 的 \fn{putObject} 经 \fn{createReadStream} 把 zip 字节直传厂商桶，Key 为下发 \ep{path} 拼 \ep{userId} 与 zip 名；最后 \fn{informUploadResult} 以同一 HMAC 密钥签名，PUT \ep{/v2/logs/upload\_task?state=} 回报 \ep{\{taskId,status,downloadURL\}}——服务端拿到落桶对象的完整 URL。
+
+同一 config 还握两个杠杆：\ep{log.level} 经 \fn{FileLogger.getLevel} 远程把日志级别调到 Debug 再下发任务，先放大采集面再收走（6929:221）；config 请求参数 \ep{repos[]} 每次轮询携带工作区周边每个 git remote URL——\fn{GitInfoCollector} 向上扫父目录、向下递归扫描，组织仓库清单随行（dist/codebuddy.js:2980）。
+
+\subsection{载荷}
+
+服务端任务恒走 \fn{upload(DateRangeUtils.last(1),\{allWorkspaces:!0\})}（6929:225）。\ep{allWorkspaces:!0} 绕过当前工作区文件名前缀过滤，\ep{\textasciitilde/.codebuddy/logs} 下按 \ep{YYYY-MM-DD} 日期目录归集的全部工作区日志连同目录内非 .log 文件一并进包；每个 .log 首行字面量 "Workspace Path:" 加绝对路径，文件名形如 \ep{\{basename\}\_\_\{md5(workspacePath)\}.log}——zip 同时交出用户目录布局。
+
+\fn{collectRecentIdeLogFiles} 再递归收集他产品目录：\ep{\textasciitilde/.workbuddy/logs}、\ep{\textasciitilde/Library/Logs/WorkBuddy}、\ep{\textasciitilde/Library/Application Support/CodeBuddyExtension/Logs} 等十处，近 24h 内修改的任意文件全收，无扩展名与大小过滤（6929:225）。vendored archiver 以 zlib-9 打明文 zip 落 \fn{os.tmpdir()}，服务端路径不传 \ep{maxRawSize}——无上限，典型 0.1--10MB。
+
+\fn{extraUploadPathsProvider} 是裸 Symbol DI token、全包零实现的休眠任意路径原语，服务端不可达（复核已推翻「服务端可注入路径」表述）；\ep{skill-upload-policy/user-check} 授权门（1.5s 超时、30s fail-open）同样零调用点，按用户点名的企业级框架备好待激活（6929:221）。\ep{dist-server}、headless、lite-wb 三个变体中 archiver 与 COS 为空桩（仅符号无实现），激活后只能轮询并回报 \ep{failed}；仅 \ep{dist/codebuddy.js} 功能完整。
+
+\subsection{consent 面}
+
+全链路零本地开关，UI 无一处提及。随包文档宣称 "DISABLE\_TELEMETRY=1 has the highest priority and disables all telemetry"（monitoring.md:184）——该变量只门控 OTel/Galileo 与 standard report，日志管线从不读取。security.md:54 写 "Tools that make network requests require user approval by default"、:30 写 "CodeBuddy Code only has the permissions you grant it"——\ep{/v3/config} 轮询、\ep{upload\_task} 点名与回报、COS \fn{putObject} 全链无人值守，无批准环节。
+
+本地逃逸仅 \ep{--serve} 跳过 init；\ep{CODEBUDDY\_DISABLE\_FILE\_LOGS=1} 碰巧掏空收集源。v2.97.4 引入任务队列、HMAC 签名与跨产品收集，发行说明仅记模型兼容性目录与 \ep{--debug} hooks 修复，零披露。
+
+\subsection{时间线}
+
+708 个 npm 版本抽测 29 个 tarball。\ep{1.25.0-next.7f18485.20251107}（2025-11-07T04:06Z）为最后 absent；同日 10:06Z 的 unlisted nightly \ep{bd7d324} 首秀完整链——6h 窗口内引入，门槛仅 \ep{log.upload} 对象 truthy 加 \ep{interval} 为正（默认 60s），无 \ep{enabled} 布尔，自动循环无条件上传，\fn{informUploadResult} 为空桩；\ep{allWorkspaces} 与休眠的 \fn{collectExtraFiles} 首日即存在。
+
+v2.0.0（2025-11-08）为列表内首个 present，旧式贯穿至 \ep{2.97.3-next.de842e2.20260519}。v2.97.4（2026-05-21）收紧为显式 \ep{enabled} 加 \ep{allowedEnvironments} 白名单、任务队列点名、HMAC 回报，并新增 \fn{collectRecentIdeLogFiles} 跨产品收集——服务端控制增强，consent 面不变。v2.158.0（2026-09-24）仅模块改号 6929 至 5399，机制不变。
+
+\evid{evidence/codebuddy-cli/figure-pack.json · \ep{extracted/codebuddy-cli/package/dist-server/6929.codebuddy.js:221-225} · dist/codebuddy.js:2971,2980,2983 · notes/sweep/codebuddy-cli.md}

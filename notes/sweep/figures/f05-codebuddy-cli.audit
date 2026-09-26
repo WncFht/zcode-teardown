@@ -1,0 +1,36 @@
+node title | -59.75093pt 162.35927pt 553.26088pt 196.14546pt | 
+region laneA | -11.38092pt 72.55458pt 551.98305pt 146.53145pt | 
+region laneB | -11.38092pt -52.63774pt 551.98305pt 44.10184pt | 
+node tikz@f@1 | -50.17577pt 94.86479pt -15.6491pt 124.22166pt | adjacent=laneA
+node tikz@f@2 | -82.56471pt -14.92712pt -15.6491pt 14.92712pt | adjacent=laneB
+node s0 | 28.71388pt 87.75368pt 96.47801pt 131.33278pt | inside=laneA
+node s1 | 156.75122pt 87.75368pt 224.51535pt 131.33278pt | inside=laneA
+node s2 | 316.08676pt 87.75368pt 383.85089pt 131.33278pt | inside=laneA
+node cos | 395.75453pt 87.75368pt 463.51866pt 131.33278pt | inside=laneA
+node s3 | 475.42186pt 87.75368pt 543.18599pt 131.33278pt | inside=laneA
+node c0 | -2.58388pt -21.78955pt 65.18025pt 21.78955pt | class=cb,inside=laneB
+node c1 | 77.08345pt -21.78955pt 144.84758pt 21.78955pt | class=cb,inside=laneB
+node c2 | 156.75122pt -21.78955pt 224.51535pt 21.78955pt | class=cb,inside=laneB
+node c3 | 236.41899pt -21.78955pt 304.18312pt 21.78955pt | class=cb,inside=laneB
+node c4 | 316.08676pt -21.78955pt 383.85089pt 21.78955pt | class=cb,inside=laneB
+node c5 | 395.75453pt -21.78955pt 463.51866pt 21.78955pt | class=cb,inside=laneB
+node c6 | 475.42186pt -21.78955pt 543.18599pt 21.78955pt | class=cb,inside=laneB
+node gs | 240.68695pt -50.43573pt 299.91516pt -23.54156pt | class=ghostx,inside=laneB,adjacent=c3
+wire w01 | 31.29819pt 0.0pt 110.96552pt 0.0pt | endpoint=c0,c1 via=laneB
+wire w12 | 110.96552pt 0.0pt 190.63329pt 0.0pt | endpoint=c1,c2 via=laneB
+wire w34 | 270.30106pt 0.0pt 349.96883pt 0.0pt | endpoint=c3,c4 via=laneB
+wire w45 | 349.96883pt 0.0pt 429.6366pt 0.0pt | endpoint=c4,c5 via=laneB
+wire w56 | 429.6366pt 0.0pt 509.30392pt 0.0pt | endpoint=c5,c6 via=laneB
+wire ws0 | 62.59595pt 87.75368pt 31.29819pt 21.78955pt | endpoint=s0,c0 via=laneA,laneB
+wire wp | 190.63329pt 21.78955pt 190.63329pt 87.75368pt | endpoint=c2,s1 via=laneB,laneA
+wire wt | 224.51535pt 87.75368pt 270.30106pt 21.78955pt | endpoint=s1,c3 via=laneA,laneB
+wire wcred | 349.96883pt 21.78955pt 349.96883pt 87.75368pt | endpoint=c4,s2 via=laneB,laneA
+wire wsts | 383.85089pt 87.75368pt 429.6366pt 21.78955pt | endpoint=s2,c5 via=laneA,laneB
+wire wcos | 429.6366pt 21.78955pt 429.6366pt 87.75368pt | endpoint=c5,cos via=laneB,laneA
+wire wrep | 509.30392pt 21.78955pt 509.30392pt 87.75368pt | endpoint=c6,s3 via=laneB,laneA
+wire wlv | 96.47801pt 87.75368pt 167.871pt 82.51277pt 236.41899pt 21.78955pt | endpoint=s0,c3 via=laneA,laneB
+wire wloop | 509.30392pt -21.78955pt 509.30392pt -66.86412pt 110.96552pt -66.86412pt 110.96552pt -21.78955pt | endpoint=c6,c1 via=laneB
+node wloopn | 188.96051pt -84.36641pt 431.30893pt -70.41658pt | adjacent=mb
+node mb | -59.75093pt -180.67288pt 478.27959pt -95.31686pt | 
+node tikz@f@3 | -0.87943pt -200.07019pt 419.40808pt -185.79416pt | adjacent=mb
+origin pgfid1 -82.36472pt -199.8702pt 553.06088pt 195.94547pt 614.295pt 794.96999pt

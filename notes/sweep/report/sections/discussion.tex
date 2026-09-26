@@ -1,0 +1,58 @@
+% 第 5 章 · 讨论 —— 判定线 / 失真五形态 / 两侧底线 / 报告边界；末段收束全书
+\chapter{讨论}
+\label{ch:discussion}
+
+46 家扫完，外发行为是一个谱系：一端是 Claude Code 逐条披露的凭证签发、直传、登记拓扑，另一端是 CodeFlicker 服务端点名的任意路径拉回。把 17 家 confirmed 与 7 家 clean 分开的从来不是「有没有外发」。
+
+\begin{verdictbox}{vgold}
+判定线画在两点：内容是否离机、consent 是否诚实有效。「有遥测」不等于「有隐藏上传」；管线存在且越过此线即可判，服务端是否实收是另一问。
+\end{verdictbox}
+
+\section{判定线画在哪}
+
+clean 基线证明外发本身不判罪。Claude Code 持有与 ZCode 同构的凭证签发、直传、登记拓扑，差别是逐条披露加多层 consent 门控；GitLab Duo 全部外发为声明式特性；Devin 经 pclntab 调用图核实无内容通道。三家共同点：载荷停在元数据级、开关真实生效——两条都满足，落在线外。
+
+线内的 consent 失真集齐五种形态，无一构成同意。同意成立需两条件：知情（文案如实描述行为）与有效（开关真实控制行为）。
+
+\begin{itemize}
+\item 假开关断有效：MiniMax 的 \ep{data\_contribution} 全 bundle 零行为消费；ZCode v3.1.0 起捕获路径不读任何 flag；Cursor 的 onboarding "Recommended" 引导卡 24 小时后由 \fn{hasEnoughTimeElapsedSinceOnboarding} 把 \ep{privacyMode} 静默升到 4，自动接通上传。
+\item 隐藏键断知情：Copilot 给 \ep{chat.workspace.codeSearchExternalIngest.enabled} 挂 \ep{onExp} tag，常规设置视图不显眼；Trae 的 \ep{telemetry.feedback.enabled} 是未注册 schema 的幻影键。
+\item 谎称文案断知情：CodeBuddy IDE 上传中经 \fn{setUploadingProgress} 让状态栏显示 "searching"；ZCode 开关描述写 "All data is stored locally"；Trae 服务端任务先伪造 "[ToB Auto Collect]" 反馈单再走 presigned PUT。
+\item 服务端热翻双断：Copilot 未设值用户回落 ExP-TAS treatment var，厂商可在会话中翻转——拨与不拨都不是边界。
+\item 零开关无从谈起：Kiro 的 \fn{ActivityLogPublisher} 在会话 create/resume 时无条件 \fn{startTimer}；MiniMax 把 \ep{enabled:true} 硬编码进 bundle。
+\end{itemize}
+
+边界还能再退。最恶劣形态不是「传工作区」，是服务端点菜任意路径：CodeFlicker 的 \ep{@ks-radar/electron-log-recall} 每 10 分钟轮询任务，路径支持 \ep{\textasciitilde} 与 env 展开、无白名单、递归 glob 打包 tar.gz；aiXcoder 的 \ep{reference\_files\_needed} 接受 \ep{../} 穿越工作区外文件；JoyCode 的 Shenyi WebSocket 通道远程拉文件，commit 钩子走明文 HTTP。路径清单不在客户端代码里，本地防线无从审计。
+
+采集面同时溢出到竞品：Trae 的 \ep{packCodexSessions} 收 \ep{\textasciitilde/.codex}、\ep{\textasciitilde/.claude}、\ep{\textasciitilde/.cursor} 转录；Cursor 的 dot-dir allowlist 把 \ep{\textasciitilde/.claude} 13 项收进 packfile。三家都在 46 家名单内——「只传工作区」不是地板。
+
+\section{两侧的底线}
+
+用户侧四件事，每件对应已观测的管线行为。
+
+\begin{itemize}
+\item 盯 egress。集中传输段绕开产品 API 面，应用层不可见，网络面可见：COS bucket \ep{copilot-codebase-1258344699}、Trae 的 \ep{imagexsg-normal.trae.ai}、ZCode 的 OSS PostObject——对象存储域名上的大体积 multipart 是抓包可见的指纹，Cursor 发往 \ep{api2.cursor.sh} 的 packfile RPC 流同样可见。
+\item 钉住版本。管线多为中途引入：ZCode v2.3.0、Cursor 2.6.11、Copilot Chat 0.48.1、Kiro 0.12.155、MiniMax 3.0.58、Qoder 0.3.0，钉住前驱即回避；例外是 Trae：最老可得版本 1.0.5431 即阳性，无干净版本可退。
+\item 密钥按已泄露处理。确认进包的面：\ep{.git/**} 全树（ZCode v3.1.0 起豁免过滤）；\ep{.env}、\ep{id\_rsa}、\ep{credentials.json}（Copilot wasm 过滤放行）；\ep{.npmrc}、\ep{.pem}、\ep{.aws}、\ep{.ssh}（CodeBuddy IDE 的 COS 通道无密钥名黑名单，Qoder 的 deny-glob 漏 \ep{.npmrc}）。用过即轮换。
+\item 自行复算。\ep{reproduce.md} 给出逐目标获取与解包命令，\ep{installer-hashes.json} 备齐安装包 sha256，判定逐条可验。
+\end{itemize}
+
+厂商侧底线三条，各有现成正反例。
+
+\begin{itemize}
+\item 披露与行为绑定。反例：ZCode 与 Cursor 的 "All data is stored locally"、CodeBuddy IDE 登录页 "Completed Locally"、Trae 的 \ep{privacyStatementUrl=example.com}。正例：Pieces 备份管线形状同 ZCode，因诚实标注为手动特性落在线外；Claude Code 同拓扑全披露。
+\item 本地过滤真实生效。MiniMax 约 25 种 secret denylist、Qoder 的 \ep{.qoderignore} 实测拦截，证明过滤做得到；反例是 ZCode 的 9 基名加 4 后缀，\ep{.aws/credentials}、\ep{.netrc}、\ep{kubeconfig} 全漏。
+\item opt-in 为真且 fail-closed（出错即关闭）。ZCode v2.3.0–v2.5.0 的 UI$\equiv$行为证明诚实 opt-in 存在过；反例是 Cursor 的 \fn{CheckCodebaseTelemetryPolicy}，RPC 出错即放行——策略检查不构成门。
+\end{itemize}
+
+\section{本报告的边界}
+
+静态分析能证：调用链完整可达、载荷到字段、门控表达式、consent 面真假、引入版本。不能证：服务端 flag 当前取值、真实触发频率、厂商是否实收、留存与二次使用、TLS 对端行为。「存在管线」不等于「某用户已被收集」——多数通道生效于服务端翻转之后；但翻转权单侧在厂商、用户侧无可感知面，判「隐藏」的依据正在于此，而非对厂商实际行为的指控。
+
+版本窗口有左截断：Trae、CodeBuddy IDE、Qoder 最老可得即阳性，引入点早于可获取历史不可知；Copilot 在 0.45.1 到 0.48.1 之间 7 个探针全 404；CodeBuddy CLI 708 版抽测 29。审计窗口 2026-09-22 至 09-25，厂商发新版后结论须以同法复核。对抗复核推翻的论断已从判定剔除：CodeBuddy CLI 的 \ep{extraUploadPathsProvider} 是 DI 空壳，Qoder \ep{back\_flow} 的出口是 \ep{/api/v1/tracking} 而非 SLS。
+
+最后回到 ZCode。v3.14.0 把存活 54 版、约 4 个月的快照管线整体移除，九家中唯一的回撤，距 v3.12.3 仅三天。移除同样安静：changelog 里与它相关的记录仍只有「优化仓库快照上传的内存占用」一条；开源树的诊断排除表把 \ep{repo-snapshots}、\ep{repo-wiki} 改写为树内无人创建的孤儿目录 \ep{repo}。
+
+拆除本身回答了全书的问题：凭证签发、直传、登记三段本就全握在服务端，移除时没有任何协议要谈，客户端删掉捕获链即完结，同意门以「功能不存在」告终。17 家 confirmed 的管线（图~\ref{fig:iso}）同样是软件决定，不是技术必需。沉默是选择，不是能力问题。
+
+\evid{notes/sweep/deep-report.md §五–§七 · notes/sweep/README.md 判定矩阵 · notes/sweep/timeline.md · notes/sweep/reproduce.md}

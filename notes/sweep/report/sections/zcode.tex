@@ -1,0 +1,44 @@
+% 第 3 章 · 基线 —— 本节为全章结构范本：verdictbox → 引子 → 图 → 机制/载荷/consent 面/时间线 → \evid
+\section{ZCode（智谱）v2.3.0–v3.12.3 —— 对照基线}
+\label{sec:zcode}
+
+\begin{verdictbox}{vcoral}
+确认隐藏上传：伪装成「本地索引」的工作区快照管线，存活 54 版约 4 个月，v3.14.0 随开源整体移除——九家中唯一的回撤。
+\end{verdictbox}
+
+本报告的起点。ZCode 把整棵工作区树打包——v3.1.0 起连 \ep{.git} 整树——加密直传阿里云 OSS，再由 OSS 服务端回调完成登记。
+
+管线在设置页里换过两副面孔：v2.3.0–v2.13.0 叫 "Index Repositories for Instant Grep"，v3.1.0 起改为双开关 "Index new folders $<$50,000 files" 加 "instant grep (Beta)"——两副面孔都没有上传字样；v3.1.0 之后 instantGrep 开关的描述写着 "All data is stored locally."。全语料不存在 trigram/buildIndex 之类的本地索引实现——「索引」本体就是这条上传管线。
+
+\begin{figure}[!t]
+\centering
+\includegraphics[width=\linewidth,height=0.82\textheight,keepaspectratio]{f01-zcode.pdf}
+\caption{ZCode 快照上传管线（v3.12.3）。凭证签发、直传、登记三段全部在服务端控制下完成；存活期唯一的实质同意门是 credential 响应里的 \ep{data:null}。}
+\label{fig:zcode-pipe}
+\end{figure}
+
+\subsection{机制}
+
+三段式拓扑（图~\ref{fig:zcode-pipe}）。每次 prompt 发送先触发 \fn{captureBeforePrompt}——v3.x 时代触发面共 7 类，v3.4.0 删去 steer 双触发后 v3.6.1 起并存 6 类（sendSession、commandV4 intent、任务完成、wiki 生成、cron、off-peak 注入），首个网络动作是 GET \ep{/api/v1/snapshot/upload-credential}，先于一切磁盘扫描。响应下发 OSS PostObject 表单字段、RSA-OAEP 公钥、\ep{snapshot\_id} 与 callback 模板，四者都是打包的必需品。
+
+客户端随后 \fn{git ls-files} 枚举工作区（失败回落 DFS 遍历）、过滤、手写 ustar tar、gzip、AES-256-CTR 加密（dataKey 经 RSA wrap 随包）、pending 落盘，最后 multipart 直传 OSS。登记不由客户端发出：OSS 服务端把填好的 callbackBody POST 回 \ep{zcode.z.ai}。回执单向——客户端从不读 callback 响应，服务端拒收它也无从知道。
+
+服务端在这条链上握三个杠杆：\ep{data:null} 拒发、\ep{base\_snapshot\_id} 决定增量还是全量、\ep{max\_size} 封顶单件。客户端持有的凭证全部短命：v3.6.1 起内存 handle，1 小时一次性。
+
+\subsection{载荷}
+
+单件 0.3–5MB（小仓），带成熟 \ep{.git} 的仓库 20–300MB；按 prompt 频率线性放大，活跃日约 50MB–10GB。tar 内：\ep{meta/prompt.json} 存 prompt 原文全文；\ep{files/} 为工作区文件原文，v3.1.0 起 \ep{.git/**} 豁免全部过滤——remote URL token、reflog、pack 一并进包；v3.11.1 起 \ep{extra-files/} 追加 mcp.json、hooks.json 的 shell 命令串、memory.json、\ep{\textasciitilde/.zcode/AGENTS.md}，连同两个 consent 开关的取值本身。
+
+卫生防线只有 9 个基名 + 4 个后缀 + \ep{token|secret} 子串匹配：\ep{.aws/credentials}、\ep{.netrc}、\ep{kubeconfig}、\ep{.docker/config.json} 全部漏网进包。加密是 AES-256-CTR，无认证位；唯一完整性锚是 envelope 里的明文 sha256——它连同 wrapped dataKey 一起经 callback 交给服务端，解密所需的一切都在服务端手里。
+
+\subsection{consent 面}
+
+存活 54 个版本、约 4 个月，UI/文档/EULA 对这条管线零披露。门控四阶段演化：v2.3.0–v2.5.0 诚实 opt-in（默认关、用户主动开，UI$\equiv$行为）；v2.6.0 默认翻转——\fn{isRepoSnapshotIndexingEffectivelyEnabled} 对没拨过开关的用户判定开启，UI 仍显示 OFF；v3.1.0 起开关装饰化——捕获路径不再读任何 flag；v3.14.0 功能整体移除，同意门以「功能不存在」告终。拨动装饰开关本身还会发 \ep{ui\_action} 遥测。
+
+全期唯一的间接承认是 v3.12.3 changelog 修复条目「优化仓库快照上传的内存占用」。开源版 NOTICE.md 首次出现上传类披露，但写的是网关转发与反馈附件——快照管线本身在开源后仍无一字。
+
+\subsection{时间线}
+
+v2.2.0（2026-05-14）无管线 → v2.3.0（05-16）首秀即完整形态 → v2.6.0（05-20）默认翻转 → v3.1.0（06-15）\ep{.git} 整树 + 开关装饰化 → v3.11.1（09-04）extraManifest 收编全局配置 → v3.14.0（09-19）整体移除，距 v3.12.3 仅三天。开源树经二次清洗：诊断排除表里的 \ep{repo-snapshots}/\ep{repo-wiki} 被改写为树内无人创建的孤儿目录名 \ep{repo}。
+
+\evid{evidence/zcode/figure-pack.json · notes/2026-09-19-工作区快照上传.md · refs/ZCode（v3.14.0 开源树，exportLogs.ts:140-147）}

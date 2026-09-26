@@ -1,0 +1,29 @@
+node title | 181.58832pt 683.20894pt 359.0138pt 722.3564pt | adjacent=sub
+node sub | 170.83522pt 667.67664pt 369.76689pt 683.82867pt | adjacent=title,sub2
+node sub2 | 139.19675pt 652.00278pt 401.40536pt 665.35889pt | adjacent=sub
+node stat | 163.72116pt 627.84749pt 376.88095pt 643.9905pt | adjacent=sub2
+node consent | 21.33955pt 231.10754pt 104.81148pt 244.05362pt | 
+node ws | 167.42119pt 76.37253pt 373.18092pt 168.32123pt | 
+node bus | 267.8826pt 205.28665pt 272.71951pt 210.12357pt | 
+wire trunk | 270.30106pt 168.32123pt 270.30106pt 207.70511pt | endpoint=ws,bus
+node vzc | 231.4399pt 551.53305pt 309.16222pt 595.11215pt | class=vend
+node vkr | 15.19887pt 262.73788pt 92.92119pt 306.31699pt | class=vend
+node vmm | 447.68092pt 262.73788pt 525.40324pt 306.31699pt | class=vend
+node vtr | 8.65486pt 430.89369pt 86.37718pt 474.4728pt | class=vend,adjacent=vbi
+node vbi | 92.306pt 474.42636pt 170.02832pt 518.00546pt | class=vend,adjacent=vtr
+node vbc | 184.20824pt 496.3351pt 261.93056pt 539.9142pt | class=vend
+node vqd | 278.67155pt 496.3351pt 356.39388pt 539.9142pt | class=vend
+node vcu | 370.57379pt 474.42636pt 448.29611pt 518.00546pt | class=vend,adjacent=vcp
+node vcp | 454.22493pt 430.89369pt 531.94725pt 474.4728pt | class=vend,adjacent=vcu
+wire wvtr | 270.30106pt 207.70511pt 82.51277pt 335.74245pt 47.51602pt 430.89369pt | endpoint=bus,vtr
+wire wvbi | 270.30106pt 207.70511pt 125.1919pt 358.50473pt 131.16716pt 474.42636pt | endpoint=bus,vbi
+wire wvbc | 270.30106pt 207.70511pt 202.01465pt 386.95747pt 223.0694pt 496.3351pt | endpoint=bus,vbc
+wire wvqd | 270.30106pt 207.70511pt 338.58746pt 386.95747pt 317.53271pt 496.3351pt | endpoint=bus,vqd
+wire wvcu | 270.30106pt 207.70511pt 415.41022pt 358.50473pt 409.43495pt 474.42636pt | endpoint=bus,vcu
+wire wvcp | 270.30106pt 207.70511pt 458.08934pt 335.74245pt 493.08609pt 430.89369pt | endpoint=bus,vcp
+wire wvzc | 270.30106pt 207.70511pt 270.30106pt 384.11203pt 270.30106pt 551.53305pt | endpoint=bus,vzc
+wire wvkr | 270.30106pt 207.70511pt 153.64464pt 239.00287pt 54.06003pt 262.73788pt | endpoint=bus,vkr
+wire wvmm | 270.30106pt 207.70511pt 386.95747pt 239.00287pt 486.54208pt 262.73788pt | endpoint=bus,vmm
+node mb | 11.38092pt 16.56012pt 543.72098pt 54.06003pt | 
+node tikz@f@1 | 133.48926pt -1.5753pt 421.61264pt 12.57677pt | adjacent=mb
+origin pgfid1 8.65486pt -1.3753pt 543.72098pt 722.1564pt 614.295pt 794.96999pt

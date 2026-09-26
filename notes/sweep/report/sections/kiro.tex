@@ -1,0 +1,73 @@
+% 第 3 章 · Kiro —— API 直收组：无凭证段、无登记段；Bearer 由 ACP 供给，HTTP 状态码即回执
+\section{Kiro 1.1.14（AWS）—— region 门下的 3 秒转录泵}
+\label{sec:kiro}
+
+\begin{verdictbox}{vcoral}
+确认隐藏上传：\fn{ActivityLogPublisher} 每 3 秒把完整会话转录（含 \ep{tool\_result} 文件内容）以未压缩 JSON POST 至 \ep{runtime.\{region\}.kiro.dev/agents/activity}；唯一门槛是 region 白名单，无任何用户开关，文档化 opt-out 头打不到这条 lane。另有休眠的工作区上传 SDK 全协议 vendored 未接线。
+\end{verdictbox}
+
+Kiro 没有 ZCode 式整树打包：vendored 的 CodeWhisperer 上传协议栈（\ep{CreateUploadUrl}/\ep{CreateArtifactUploadUrl}/\ep{CreateWorkspace}/\ep{UploadIntent.WORKSPACE\_CONTEXT} 加 S3 multipart 助手，约 40 个命令，extension.js:17414）全树零调用点休眠。活管线另起炉灶：会话新建与恢复路径无条件点燃一个 3 秒定时器，持续读取 \ep{\textasciitilde/.kiro/sessions} 下不断追加的转录 JSONL，逐批 POST 至 \ep{/agents/activity}，全程不读任何 consent 字段。
+
+\begin{figure}[!t]
+\centering
+\includegraphics[width=\linewidth,height=0.82\textheight,keepaspectratio]{f06-kiro.pdf}
+\caption{Kiro 转录发布管线（1.1.14）。会话创建/恢复即点火 3 秒泵；构造期 region 白名单是唯一门；对照面板示 \ep{x-amzn-codewhisperer-optout} 头只经 Smithy middleware 打在 Q/CodeWhisperer 调用上，走裸 \fn{https.request} 的发布器不携带。}
+\label{fig:kiro-pipe}
+\end{figure}
+
+\subsection{机制}
+
+单链拓扑（图~\ref{fig:kiro-pipe}），无凭证签发段、无登记段：Bearer 由宿主经 ACP 回调供给，HTTP 状态码即回执。
+
+构造期是唯一的门。KiroAgent 构造器判定 \ep{s \&\& n \&\& old.has(n)}（extension.js:16688）：\ep{n} 为 region，缺省回退 \ep{us-east-1}（:16671）；\ep{old} 是硬编码白名单 \ep{\{us-east-1, us-west-2\}}（:16669）；endpoint 缺省按 \ep{https://runtime.\{n\}.kiro.dev} 派生。tier、IdP、企业属性、用户设置均不参与判定。
+
+会话 create（:16690）与 resume（:16691）均无条件 \fn{startTimer}：\fn{setInterval(flush, eld)}，\ep{eld=3e3}；dispose 时 \fn{finalFlush}（:16693）。每拍 flush 按 \ep{publish.cursor} 里的 \ep{byteOffset:seq} 从字节偏移续读 \ep{messages.jsonl}；\ep{sub-executions/*.jsonl} 按 \ep{publish-sub.cursor} 的 JSON map 同样续读。只消费完整行，残缺行留到下一拍。
+
+过滤只有 \fn{ACTIVITY\_TYPE\_MAP} 20 键存在性检查：\ep{agent\_note}、\ep{tool\_revert}、\ep{ContextualHookInvoked}、\ep{session\_start} 四个变体无映射，静默丢弃；无内容级脱敏或截断。\fn{toPayload} 把整条 payload 原样塞进 \ep{content} 并标 \ep{visibility:"external"}。批体为 \ep{JSON.stringify(\{payload\})}，每批 $\le$25 条，无压缩、无字节上限。
+
+发送侧 \fn{publishBatch}（:16669）：token 由 \fn{AcpCallbackAuthProvider} 经宿主侧 ACP 信道 \ep{\_kiro/auth/getAccessToken} 取得，随后以裸 \fn{https.request}（\ep{hQi=require("https")}）POST :443，30 秒超时，代理经 \fn{IU} 解析（:4186）。请求头固定 \ep{Authorization: Bearer}、\ep{TokenType}（SSO\_OIDC 等四值）、\ep{Content-Type}、\ep{User-Agent: KiroAgent}、\ep{Content-Length}，可选 \ep{x-amzn-kiro-profile-arn}；无 opt-out 头。
+
+回执即 HTTP 状态码，语义方向反常：非 2xx 只写本地 warn（body 前 500 字符）不抛错，\fn{writeCursor} 照样推进，被服务端拒收的批次静默丢弃；仅 transport 错误或超时使 promise reject，游标停住，下一拍原样重发。
+
+\subsection{载荷}
+
+单批 $\le$25 条，常规 5--500KB/POST；含大 \ep{tool\_result} 时单批数 MB，代码无上限。\ep{content} 是 JSONL 行 payload 的逐字引用：user 项含文本、\ep{contextItems}（活动文件全文）与 base64 \ep{images}/\ep{documents}；\ep{tool\_call.args} 为完整工具入参——路径、shell 命令、\ep{fs\_write} 新文件全文；\ep{tool\_result.content} 为读到的文件内容与终端输出；\ep{steering\_inclusion} 为 steering 文档体；\ep{pending\_interaction} 带审批问答。
+
+第二文件内容通道是 \ep{\_meta.kiro.checkpoint.fileChanges[]}：逐文件 \ep{original}/\ep{modified} 编辑前后双份。
+
+日量按转录追加字节计：常规 8 小时编程日约 10--70MB、数百个 POST；重度日单条 100KB+，日外发可破 100MB。盘上转录预算 \ep{diskBudgetBytes=524288e3}（500MB，:16688）即本地上界。服务端确存会话档案有旁证：resume 下载腿按 host 白名单 axios GET S3，取回含 \ep{workspace/} 与 \ep{.kiro/sessions/} 的 zip（:18730--32）。
+
+\subsection{consent 面}
+
+consent 面为零：全部版本的扩展 \ep{package.json} 无 activity/publish/upload 类设置键，UI 无开关，POST 无 opt-out 标记。文档给的退出路径对本管线是安慰剂：取消勾选 "Content Collection for Service Improvement" 只经 \fn{middlewareStack} 给 Smithy/Q 客户端打 \ep{x-amzn-codewhisperer-optout} 头（:4180，重见于 :16867）；\fn{publishBatch} 的裸 \fn{https.request} 不经过任何 middleware。
+
+\begin{table}[!t]
+\centering\small
+\begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}p{6.4cm}>{\raggedright\arraybackslash}X@{}}
+\toprule
+宣称（逐字，出处 evidence/kiro/disclosure/） & 实际行为 \\
+\midrule
+``We do not collect telemetry from Kiro Pro, Pro+, Pro Max, or Power users that access Kiro through AWS IAM Identity Center or external identity provider.''（faq.md） & 门链只有 region 谓词（:16688），无 tier/IdP/企业检查；企业 IdP 会话同样每 3 秒外流完整转录。 \\
+\addlinespace[2pt]
+``Kiro enterprise users are automatically opted out of telemetry and content collection by AWS.''（data-protection.md） & 唯一 opt-out 产物是 Smithy middleware 打的头；发布器裸 \fn{https.request} 不携带、不检查。 \\
+\addlinespace[2pt]
+``To opt out of content collection, uncheck the box for Data Sharing and Prompt Logging: Content Collection for Service Improvement.''（data-protection.md） & 该复选框仅翻转 :4180 的 middleware；\ep{/agents/activity} 无此头，勾选与否不改变转录外流。 \\
+\bottomrule
+\end{tabularx}
+\caption{Kiro 宣称对照节选：两条逐字宣称与门链直接矛盾，opt-out 指引对转录 lane 无效。}
+\label{tab:kiro-claims}
+\end{table}
+
+表~\ref{tab:kiro-claims} 之外，遥测枚举自述（usage data、performance metrics）整体遗漏了这条最大的内容采集。
+
+另有两处记录在案。休眠 SDK：\ep{CreateUploadUrlRequest} 已含 \ep{WorkspaceContextUploadContext\{workspaceId, relativePath, programmingLanguage\}}，激活只差接线。
+
+基础设施评估通道（:16620--16641, :16712）：pre/post-tool-use 钩子把 \ep{toolParams} 全文、$\le$128KB 会话上下文、CDK 模板（$\le$4MB）连同 \fn{getDeployEnv} 扫出的全部 \ep{AWS\_*} 环境变量送 \ep{/mcp/stream}；门是内部实验旗标 \ep{infraSafetyMonitor}，默认 true、用户不可见（:16887）。
+
+\subsection{时间线}
+
+0.11.133（2026-04-22）为最后 absent 构建，转录存储已存在而发布器尚无 → 0.12.155（2026-05-06）首现即机制完整（3 秒 flush / 批 25 / 字节游标），gate 为 \ep{environment==='sandbox'} 加显式 endpoint，仅云端沙箱外流 → 1.0.0（06-25）GA 仍 sandbox-only → 1.0.52（07-02）放宽为 \ep{sandbox || client==='kiro-ide'} 加 region 白名单，桌面 IDE 默认入圈 → 1.0.116（07-09）移除 env/client 检查，endpoint 按 region 自动派生，白名单区域任何安装默认开 → 1.1.14（2026-09-14）维持最终形态。
+
+三次放宽全是编译期环境过滤的松绑，consent 面始终为零；休眠上传 SDK 比发布器更老（0.6.0 已 vendored），从未接线。
+
+\evid{evidence/kiro/figure-pack.json · notes/sweep/kiro.md · extracted/kiro 树 extensions/kiro.kiro-agent/dist/extension.js:16669--16693（发布器）、:4180/:16867（opt-out middleware）、:17414（休眠 SDK）}

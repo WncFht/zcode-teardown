@@ -1,0 +1,76 @@
+% 第 3 章 · API 直收组 —— Copilot Chat（微软/GitHub）
+\section{Copilot Chat（微软/GitHub）v0.48.1 —— API 直收：服务端点菜}
+\label{sec:copilot}
+
+\begin{verdictbox}{vcoral}
+确认隐藏上传：external ingest 管线把变更文件全文 POST 到 \ep{api.github.com/external/code/ingest*}；\ep{/batch} 由服务端自选 \ep{doc\_ids} 点菜回传；门槛是 onExp 隐藏设置，未设值用户可经 ExP-TAS 中会话热翻转；consent modal 双实现零调用点。
+\end{verdictbox}
+
+微软自家一方管线，也是九家中披露面最厚的——但披露厚度与门槛诚实度不匹配。与 ZCode 打包整树走对象存储不同，这条链不产本地归档：客户端上交全库文件指纹，服务端 \ep{/batch} 逐批回传想要的 \ep{doc\_ids}，客户端只对被点名的读盘发全文。
+
+点菜权连同门本身都在服务端：设置 \ep{chat.workspace.codeSearchExternalIngest.enabled} 声明 \ep{default:false}、\ep{tags:[advanced,onExp]}（extension/package.json:1），用户未显式设值时取值回落到 ExP-TAS 实验变量（treatment variable）——微软可在零用户操作下远程翻转这道门。
+
+\begin{figure}[!t]
+\centering
+\includegraphics[width=\linewidth,height=0.82\textheight,keepaspectratio]{f02-copilot.pdf}
+\caption{Copilot Chat v0.48.1 external ingest 泳道。控制面 ExP-TAS 30 min 轮询可远程翻转隐藏门；服务端 \ep{/ingest/batch} 自选 \ep{doc\_ids} 点菜，\ep{/document} 逐文件发全文；consent modal 双实现零调用者（虚线幽灵框）。}
+\label{fig:copilot-pipe}
+\end{figure}
+
+\subsection{机制}
+
+门控两段式（图~\ref{fig:copilot-pipe}）。\fn{isExternalIngestEnabled}（extension.js:2387）读 \fn{getExperimentBasedConfig}（:7115）：用户显式值优先，未设值依次回落 \ep{experimentName}、\ep{copilotchat.config.<id>}、\ep{config.<fullyQualifiedId>} 三个 treatment variable，最后 default。
+
+experimentName 绑定 \ep{copilotchat.config.chat.advanced.workspace.codeSearchExternalIngest.enabled}（:1195）；TAS 客户端每 30 min 拉 \ep{default.exp-tas.com/vscode/ab} 的 \ep{Configs[].Parameters}（:1113），遥测关闭则整条通道停用。取 \ep{"force"} 时 ingest 取代 remote-index 路径；该门独立于可见的 \ep{chat.workspace.enableCodeSearch}——external ingest 单独开启即可令语义搜索可用（isAvailable）。
+
+触发无定时器，仅两个调用点：每次 @workspace 语义搜索进 \fn{searchLocalDiff}（:2409），先 \fn{updateForceIncludeFiles} 再 \fn{doIngest}，progress 传 noop；diff 超 2000 文件或逾 70\% 标 tooLarge 时跳过前者、后者照跑。另一路是 Developer 命令 \ep{github.copilot.buildRemoteWorkspaceIndex}（:6211）。
+
+收集与上传全在 \fn{ExternalIngestIndex}/\fn{ExternalIngestClient}（:2363--2386）：\fn{reconcileDbFiles} 对每 folder 跑 \ep{findFiles(**/*)} 入 sqlite \ep{codebase-external.sqlite}，并注册 FileSystemWatcher 持续跟踪。
+
+\fn{performIngestion} 四步 POST——\ep{/external/code/ingest} 交 \ep{fileset\_name=vscode.copilot-chat.<uuid>}、\ep{new\_checkpoint}、\ep{geo\_filter}（wasm 概率集）、\ep{coded\_symbols} 换 \ep{ingest\_id}；\ep{/coded\_symbols} 区间循环对账；\ep{/batch} 分页取服务端自选 \ep{doc\_ids}；每 \ep{doc\_id} 读盘 base64 POST \ep{/document}，64 并发、500 重试 3 次、429 重试 10 次，读失败仍发空文档；\ep{/finalize} 封口。
+
+凭证为 \fn{getGitHubSession} 静默取回的用户 OAuth Bearer（\ep{silent:!0}），附 \ep{X-Client-Application} 等三头——明文 JSON over TLS，无 STS、无客户端加密、无独立对象存储段。
+
+\subsection{载荷}
+
+服务端分三段实收：握手段拿到 fileset uuid、全树 checkpoint、覆盖全部 docSha 的 GeoFilter 与符号清单，等价于完整文件清单指纹；\ep{/document} 段收到被点名文件的 b64 全文与 \ep{file\_path=<folderId>/<相对路径>}（folderId 消毒后截 8 字符）；查询段 \ep{/external/embeddings/code/search} 把 \ep{prompt}（$\le$7800B 原文）绑 \ep{scoping\_query=fileset:<uuid>}，模型 \ep{metis-1024-I16-Binary}。
+
+量级：5000 文件首全量约 55MB；增量只发被点名 \ep{doc\_ids}（20 文件约 220KB）；checkpoint 零漂移 0 字节。
+
+卫生面是四层 JS 名单加 wasm：扩展名黑名单 177 条含全套私钥材料（\ep{pfx}/\ep{p12}/\ep{pem}/\ep{crt}/\ep{cer}/\ep{key}/\ep{priv}/\ep{jks}/\ep{keystore}/\ep{csr}），目录段 26 条、scheme 11 条，basename 仅 5 条（\ep{.ds\_store}、\ep{thumbs.db}、\ep{package-lock.json}、\ep{yarn.lock}、\ep{.cache}）——\ep{.env}、\ep{id\_rsa}、\ep{.npmrc}、\ep{credentials.json}、\ep{netrc}、\ep{.ssh} 全数放行；wasm IngestFilter 14 条 deny 正则同样不含密钥基名（extension.js:1854、wasm bindings :265）。
+
+\ep{.gitignore} 只靠 VS Code 默认 \ep{search.useIgnoreFiles} 兜底；Copilot 内容排除 \fn{isCopilotIgnored} 生效（服务端 \ep{/copilot\_internal/content\_exclusion} 下发）。
+
+\subsection{consent 面}
+
+用户可见面三处：状态项 \ep{copilot.workspaceIndexStatus} 写 "Indexes your codebase for more relevant AI results"（:6214）、build/delete 两条命令、设置描述句 "Enable external ingest for semantic codebase search."——管线全链用户可见文案无一处 "upload"。
+
+唯一的 consent 对话 \fn{promptForExpandedLocalIndexing} 有两处实现（:2363 stub \ep{return!1}、:6982 真 modal "Build local index for this workspace?"），在 20MB bundle 内调用点数为 0。auth 全程静默，上传进度 reporter 是 noop。
+
+宣称对照见表~\ref{tab:copilot-claims}。唯一能对上的是 repository-indexing 文档页 "This feature uploads your data to GitHub to make it searchable"——它把范围框在 non-GitHub repositories；同页 "controlled by policy and is disabled by default" 对个人用户不成立，门槛是服务端可翻的实验变量而非组织策略。
+
+产品内 aka.ms 直达页写 "parts of the index might come from remote sources"，数据流向说反。GitHub 自家 Extension Developer Policy 明令禁未经 consent 收集个人数据、禁误导——第三方扩展按同一标尺会被下架。
+
+\begin{table}[!t]
+\centering\small
+\begin{tabularx}{\linewidth}{@{}p{0.40\linewidth}Xc@{}}
+\toprule
+宣称原文（逐字） & 实际行为 & 判定 \\
+\midrule
+"This feature uploads your data to GitHub to make it searchable." & 与 \ep{/external/code/ingest*} 逐字吻合；仅框在 non-GitHub repositories 语境 & 如实 \\
+"controlled by policy and is disabled by default" & 个人用户门槛 = onExp 设置 + TAS treatment variable，可远程热翻 & 低估 \\
+"parts of the index might come from remote sources" & 方向说反：本地文件内容上传到 GitHub & 误导 \\
+"Indexes your codebase for more relevant AI results."（状态栏） & 管线全链文案无 "upload"；consent modal 死代码 & 误导 \\
+\bottomrule
+\end{tabularx}
+\caption{宣称对照摘录（disclosure/gh-repository-indexing.md、vsc-workspace-context.md 逐字）。}
+\label{tab:copilot-claims}
+\end{table}
+
+\subsection{时间线}
+
+v0.8.0（2023-10-05）至 v0.45.1（2026-04-23）九个二分探针的 5 组特征字面量全部零命中；v0.45.1 是最后一个可获取无签名版本。marketplace 1125 版列表在 v0.45.1 到 v0.48.1 之间零条目，v0.45.2/v0.46.0/v0.47.0/v0.48.0 及 3 个日期预发布号共 7 探针全 404——首发真身被 404 窗口遮蔽，v0.48.1（2026-05-15）只是首个可获取携带版，且为可获取历史最新版（v0.48.2 起探针亦 404）。
+
+落地即完全体：onExp 设置、TAS 翻转接线、端点族、sqlite、consent modal 死代码同版到位。开源对照：vscode-copilot-chat 仓的门是 \ep{ConfigKey.TeamInternal}，其 package.json 无此设置项——shipped 版把内部开关外化成隐藏 contributed setting。
+
+\evid{evidence/copilot-chat/figure-pack.json · notes/sweep/copilot-chat.md · \ep{extracted/copilot-chat/extension/dist/extension.js:2363/2409/7115/1854/6214/6982}}

@@ -1,0 +1,35 @@
+node title | -11.38092pt 217.99513pt 445.26276pt 237.24876pt | class=txt
+region laneA | -11.38092pt -9.95863pt 278.83696pt 192.05602pt | 
+region laneB | 321.51608pt -9.95863pt 455.2439pt 192.05602pt | 
+node labA | -21.37634pt 190.53304pt 138.03275pt 206.667pt | adjacent=laneA
+node labB | 291.63823pt 190.78598pt 479.43129pt 206.41406pt | adjacent=laneB
+region wrap | 19.91682pt 0.0pt 128.03734pt 177.82964pt | inside=laneA
+node tikz@f@1 | 21.33955pt 176.16867pt 138.5811pt 189.16443pt | inside=laneA,adjacent=wrap,adjacent=labA,adjacent=rep,adjacent=s1
+node s1 | 26.58022pt 138.96848pt 121.37437pt 174.01169pt | class=stg,inside=wrap,inside=laneA
+node s2 | 26.58022pt 93.44391pt 121.37437pt 128.48712pt | class=stg,inside=wrap,inside=laneA
+node s3 | 26.58022pt 47.91978pt 121.37437pt 82.963pt | class=stg,inside=wrap,inside=laneA
+node s4 | 26.58022pt 2.39522pt 121.37437pt 37.43843pt | class=stg,inside=wrap,inside=laneA
+node rep | 143.23642pt 17.88846pt 275.01926pt 175.58984pt | inside=laneA
+node tb | 280.52084pt 79.92763pt 319.83221pt 113.55067pt | adjacent=laneA,adjacent=laneB,adjacent=rep,adjacent=ep2
+node ep1 | 325.33403pt 124.03075pt 445.73549pt 157.65123pt | class=ep,inside=laneB
+node ep2 | 325.33403pt 79.92891pt 445.73549pt 113.5494pt | class=ep,inside=laneB
+node ep3 | 325.33403pt 15.91023pt 445.73549pt 49.53072pt | class=ep,inside=laneB
+node tikz@f@2 | 392.64793pt 53.98262pt 427.67647pt 75.19307pt | inside=laneB,adjacent=ep2,adjacent=ep3
+node gate | -7.2955pt -40.12721pt 274.7511pt -13.93282pt | adjacent=laneA,adjacent=plac
+node plac | 291.45833pt -44.92673pt 456.84846pt -9.1333pt | adjacent=laneB,adjacent=gate
+node mb | -11.38092pt -167.74216pt 464.05362pt -56.90549pt | 
+node tikz@f@3 | 12.77705pt -187.0155pt 439.89565pt -172.86343pt | adjacent=mb
+wire wt12 | 73.9773pt 138.96848pt 73.9773pt 128.48712pt | endpoint=s1,s2 via=wrap,laneA
+wire wt23 | 73.9773pt 93.44391pt 73.9773pt 82.963pt | endpoint=s2,s3 via=wrap,laneA
+wire wt34 | 73.9773pt 47.91978pt 73.9773pt 37.43843pt | endpoint=s3,s4 via=wrap,laneA
+wire tp1 | 121.37437pt 156.49008pt 134.29698pt 156.49008pt | endpoint=s1 via=wrap,laneA
+wire tp2 | 121.37437pt 110.96552pt 134.29698pt 110.96552pt | endpoint=s2 via=wrap,laneA
+wire tp3 | 121.37437pt 65.44139pt 134.29698pt 65.44139pt | endpoint=s3 via=wrap,laneA
+wire tp4 | 121.37437pt 19.91682pt 134.29698pt 19.91682pt | endpoint=s4 via=wrap,laneA
+wire busv | 134.29698pt 156.49008pt 134.29698pt 19.91682pt | via=laneA
+wire trunk | 134.29698pt 96.73915pt 143.23642pt 96.73915pt | endpoint=rep via=laneA
+wire wrtb | 275.01926pt 96.73915pt 280.52084pt 96.73915pt | endpoint=rep,tb via=laneA
+wire wtb2 | 319.83221pt 96.73915pt 325.33403pt 96.73915pt | endpoint=tb,ep2 via=laneB
+wire wtb1 | 300.17653pt 113.55067pt 300.17653pt 140.84099pt 325.33403pt 140.84099pt | endpoint=tb,ep1 via=laneB
+wire wmrg | 385.53476pt 79.92891pt 385.53476pt 49.53072pt | endpoint=ep2,ep3 via=laneB
+origin pgfid1 -21.17635pt -186.8155pt 479.2313pt 237.04877pt 614.295pt 794.96999pt

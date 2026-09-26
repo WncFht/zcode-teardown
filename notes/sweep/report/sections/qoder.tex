@@ -1,0 +1,75 @@
+% 第 3 章 · Qoder 1.31.0（阿里巴巴）
+\section{Qoder 1.31.0（阿里巴巴）—— 服务端点名的缺漏文件}
+\label{sec:qoder}
+
+\begin{verdictbox}{vcoral}
+确认隐藏上传：服务端 merkle 比对返回 \ep{notFoundFileIds} 点名缺漏文件，\ep{files.zip} 明文 multipart 上行 \ep{center.qoder.sh}；并行 back\_flow 通道把 prompt 与文件原文 gzip 直送 \ep{/api/v1/tracking}，全披露面零提及。
+\end{verdictbox}
+
+三段式同构组里文档写得最多的一例。Qoder 是 VS Code 1.106.3 fork，核心是 110MB stripped Go daemon（pclntab 恢复 75349 个函数）。官方 indexing 文档罕见地正面描述上传："uploads only the necessary code files, excluding configuration files, secrets, and other nonessential files"，并称 "destroyed after vector generation"。二进制审计给出另一幅图：上传清单由服务端 merkle 比对点名，必收清单明收 \ep{.npmrc}，另有一条 back\_flow 原文通道运行在全部披露面之外。
+
+\begin{figure}[!t]
+\centering
+\includegraphics[width=\linewidth,height=0.82\textheight,keepaspectratio]{f07-qoder.pdf}
+\caption{Qoder 缺漏文件上传与 back\_flow 双通道（1.31.0）。A 道由服务端 merkle 比对决定上传清单，B 道挂在每次 doAsk 链尾，仅服务端 flag 门控。}
+\label{fig:qoder-pipe}
+\end{figure}
+
+\subsection{机制}
+
+A 道四条触发面均不需用户操作（图~\ref{fig:qoder-pipe}）：daemon 启动钩子 \fn{postStartHooks} 分别调 \fn{UploadMissingFile} 与 \fn{EnsureMtreeFilesUploaded}（\ep{start.go:311,:321}）；打开工作区的 RPC（\ep{workspace\_manager.go:680}）；RAG 索引构建（\ep{index\_setting/codebase.go:145}）；worktree/commit 监控（\ep{worktree\_commit\_monitor.go:260}）。
+
+门链在下一阶段统一收口：远端 flag \ep{upload.missing.files.enabled} → \fn{GetAutoIndexSetting}（"Automatic Indexing" 默认开）→ 工作区合法 → 登录态 → \ep{codebaseId}。
+
+本地侧 \fn{NewWorkspaceMerkleTree} 建树、\fn{fileDigestStreaming} 算 sha256；\fn{GetMissingFileIds} 向 \ep{/api/v2/service/codebase/file/bfDiscover} 发 \ep{BackflowDiscoverRequest\{userId,workspacePath\}}，服务端回 \ep{notFoundFileIds}——上传清单由服务端视图决定，\fn{matchMissingFiles} 映射回本地相对路径。\fn{splitIntoBatches} 按单文件 $\le$1MiB、单批 $\le$9MiB 切批，\ep{archive/zip} 产出 \ep{files.zip}。
+
+签名头三段式：\ep{Date}（RFC1123-GMT）、\ep{Signature}=\fn{Md5Encode}（硬编码密钥 \ep{\&Q3C3!N5mP5bbNcyryMY@KZtUFLRGbTe} 拼接 b64 串 "war, war never changes"）、\ep{Appcode} 与 \ep{Authorization: Bearer COSY.*}（\ep{big\_model.go:723-:725}）。
+
+multipart PUT \ep{/api/v2/service/codebase/file/upload} 写 7 个字段：\ep{codebaseId}、\ep{model=text-embedding-v4}、\ep{dimensions=512}、\ep{totalSyncFileCount}、\ep{isBackFlow}、\ep{workspacePath}（绝对路径）、\ep{notFoundFileIds}，文件部为 \ep{CreateFormFile("file","files.zip")}。注册走控制面 \ep{/sync/initCodebase}——上行绝对路径、git \ep{remoteUrl}、整树 simhash 指纹换取 \ep{codebaseId}——再以 \ep{updateMerkleNodes} 上行全量 relpath+sha256 merkle 地图。
+
+B 道 \fn{doAgentBackFlow} 挂在每次 doAsk 链尾，向 \ep{/api/v1/tracking} 发约 20 个 \ep{*\_gzip\_b64} 字段：\ep{file\_content}（截断 \ep{0x5000}）、\ep{prompt\_user\_input}、\ep{edit\_sequence}、\ep{mtree} 整树、\ep{git\_remote\_urls}、\ep{context\_data}、\ep{memory}、\ep{mcp\_tools}。
+
+门槛只有服务端 flag（\ep{backflow.enabled}、\ep{backflow.scanfile.enabled}、\ep{backflow.nes.ratio}）与 \ep{data\_policy\_sign\_status}，客户端无开关；vendored 阿里云 SLS SDK 零调用零构造，是死代码。
+
+\subsection{载荷}
+
+\ep{files.zip} 明文 Deflate，条目名为工作区相对路径，内容是原始字节；首索引爆发量 = 服务端缺失文件字节按 9MiB 分批串行，10k 文件（autoIndex 上限）约 34 批。卫生面是文件名 glob：\ep{.qoderignore}/\ep{.gitignore} 真实生效，\ep{.git} 硬排除，secrets deny-glob 覆盖 \ep{.env*}、\ep{credentials}、\ep{key}、\ep{pem}、\ep{ssh}。但 .data 段 53 项 keep-list（\ep{0x69330c0}）以 \ep{.npmrc} 收尾——registry \ep{\_authToken} 以「必要代码文件」名义随包上行。
+
+B 道单字段 $\le$20KiB、\ep{file\_content} $\le$\ep{0x5000}，每轮 ask 即发一遍原文。索引面之外另有：\fn{batchBuildCommitMsg} 送 raw unified diff（无大小上限）；wiki 上传送文档全文；诊断 zip 混入 RSA-2048 密封的 \ep{[ACP]} 会话日志，厂商独钥可读。
+
+\subsection{consent 面}
+
+唯一开关是 "Automatic Indexing"（\ep{defaultValue:true}，\ep{workbench.desktop.main.js:42950}），文案只写 "improves contextual understanding"（同文件 \ep{:892}）。门真实生效——各 indexer 均查 \ep{autoIndexEnable}——属披露失真的 opt-out 而非假开关。
+
+\ep{data\_policy\_not\_agree} 只把 \ep{X-Stilla} 置 2，标记不拦截（\ep{server\_vector.go:2058}）。Privacy Mode 只管 B 道，且 \fn{backFlowEnabledUnsafe} 在 \ep{GetSignStatus=='AGREE'} 检查之前先比对 \ep{STILLA\_ENABLED} 短路返回 true：索引开着，back\_flow 即无视同意态。
+
+敏感检测基本是摆设：\fn{IsSensitiveFileType} 在活路径被调（\ep{server\_vector.go:1916}）但命中只跳过 back\_flow 标记、不拦文件本体上传，过滤形同虚设；\fn{ContainsSensitiveDataUs} 在符号表中留名但零调用零数据引用，属不可达诱饵；真正生效的敏感判断是远控 \ep{scanfile.regexlist} base64 下发后经注入函数字段分发。
+
+宣称对照见表~\ref{tab:qoder-claims}。
+
+\begin{table}[!t]
+\centering
+\caption{Qoder 宣称对照（宣称原文逐字）}
+\label{tab:qoder-claims}
+\small
+\begin{tabularx}{\linewidth}{@{}p{0.46\linewidth}X@{}}
+\toprule
+宣称 & 实际 \\
+\midrule
+"uploads only the necessary code files, excluding configuration files, secrets" & 上传清单由服务端 \ep{notFoundFileIds} 点名；\ep{.npmrc} 在 53 项 keep-list，registry token 随包上行 \\
+"Qoder IDE does not store your source code" & 文件原文写入服务端 merkle 索引（\ep{/file/upload}+\ep{updateMerkleNodes}），并经 back\_flow 重发 \\
+"The uploaded code files are destroyed after vector generation. Only vector data is retained" & \ep{file\_content\_gzip\_b64} 原文上行 \ep{/api/v1/tracking} 不经向量生成，「销毁」不可证 \\
+「向量数据也仅保存在客户端本地」 & \fn{ServerVecRetrieveEngine} 服务端检索服务端 merkle 索引，与英文文档自相矛盾 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{时间线}
+
+最早可获取构建（wayback 2025-08-22）已带齐上传基础设施——daemon、\ep{center.qoder.sh}、\ep{/codebase/file/upload} 端点、back\_flow reporters、autoIndex UI，早于可获取历史。
+
+$\le$0.2.15 出现 \ep{data\_policy} 键（只置标记）；0.2.29 是最后缺失版；0.3.0（daemon build 2026-01-19，commit \ep{2ea2ea3}）首现缺漏链 \ep{upload\_missing\_file.go}、\ep{bfDiscover} 与远端 flag \ep{upload.missing.files.enabled}，零新 consent 面，同时是首个签名 daemon。
+
+0.6.0–1.20.1 约 19 个版本门槛设计不变；1.31.0（2026-09-17）\fn{EnsureMtreeFilesUploaded} 编排器上线，把门序聚合为 flag→autoIndex→登录→\ep{codebaseId}；1.32.0 无变化。back\_flow 自首发至今仅服务端 flag，从无客户端开关；\ep{qodercli} 1.1.62 不携带该链——缺漏上传为 IDE daemon 专属。
+
+\evid{evidence/qoder/figure-pack.json · notes/sweep/qoder.md · \ep{evidence/qoder/anatomy/d\_uploadFileToEmbeddingOptions\_func1.txt}}

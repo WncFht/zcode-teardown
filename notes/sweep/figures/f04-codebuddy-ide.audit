@@ -1,0 +1,45 @@
+node title | -93.89413pt 64.32036pt 362.37613pt 83.63423pt | class=txt
+node h1 | 24.20944pt 30.54404pt 92.44696pt 51.96872pt | adjacent=row0
+node h2 | 141.3747pt 30.53952pt 231.35641pt 51.97324pt | adjacent=row0
+node h3 | 282.97618pt 30.54404pt 345.8296pt 51.96872pt | adjacent=row0
+node h4 | 413.65591pt 30.76537pt 471.22458pt 51.74739pt | adjacent=row0
+region row0 | -5.12128pt -23.33145pt 501.33719pt 23.33145pt | 
+region row1 | -5.12128pt -77.3915pt 501.33719pt -30.729pt | adjacent=row0
+region row2 | -5.12128pt -143.68643pt 501.33719pt -83.9355pt | adjacent=row1
+region row3 | -5.12128pt -201.1611pt 501.33719pt -154.49818pt | adjacent=row2
+node ga | -74.46358pt -14.88647pt -10.243pt 14.88647pt | adjacent=row0,adjacent=a1
+node gb | -73.99382pt -68.9736pt -10.243pt -39.14645pt | adjacent=row1,adjacent=b1
+node gc | -83.15404pt -128.48088pt -10.243pt -99.14107pt | adjacent=row2,adjacent=c1
+node gd | -74.59004pt -192.57959pt -10.243pt -163.07968pt | adjacent=row3,adjacent=d1
+node a1 | -0.45003pt -18.94432pt 117.10643pt 18.94432pt | class=cc,inside=row0
+node a2 | 127.58733pt -18.94432pt 245.14378pt 18.94432pt | class=cc,inside=row0
+node a3 | 255.62466pt -18.94432pt 373.18112pt 18.94432pt | class=cc,inside=row0
+node a4 | 383.66202pt -18.94432pt 501.21848pt 18.94432pt | class=cc,inside=row0
+wire wa12 | 58.3282pt 0.0pt 186.36555pt 0.0pt | endpoint=a1,a2 via=row0
+wire wa23 | 186.36555pt 0.0pt 314.4029pt 0.0pt | endpoint=a2,a3 via=row0
+wire wa34 | 314.4029pt 0.0pt 442.44025pt 0.0pt | endpoint=a3,a4 via=row0
+node b1 | -0.45003pt -73.00435pt 117.10643pt -35.1157pt | class=cc,inside=row1
+node b2 | 127.58733pt -73.00435pt 245.14378pt -35.1157pt | class=cc,inside=row1
+node b3 | 255.62466pt -73.00435pt 373.18112pt -35.1157pt | class=cc,inside=row1
+node b4 | 383.66202pt -73.00435pt 501.21848pt -35.1157pt | class=cc,inside=row1
+wire wb12 | 58.3282pt -54.06003pt 186.36555pt -54.06003pt | endpoint=b1,b2 via=row1
+wire wb23 | 186.36555pt -54.06003pt 314.4029pt -54.06003pt | endpoint=b2,b3 via=row1
+wire wb34 | 314.4029pt -54.06003pt 442.44025pt -54.06003pt | endpoint=b3,b4 via=row1
+node c1 | -0.45003pt -132.7553pt 117.10643pt -94.86665pt | class=cc,inside=row2
+node c2 | 127.58733pt -132.7553pt 245.14378pt -94.86665pt | class=cc,inside=row2
+node c3 | 255.62466pt -132.7553pt 373.18112pt -94.86665pt | class=cc,inside=row2
+node c4 | 383.66202pt -132.7553pt 501.21848pt -94.86665pt | class=cc,inside=row2
+node decoy | 213.78918pt -142.52898pt 415.0166pt -134.03172pt | inside=row2,adjacent=c2,adjacent=c3,adjacent=c4
+wire wc12 | 58.3282pt -113.81097pt 186.36555pt -113.81097pt | endpoint=c1,c2 via=row2
+wire wc23 | 186.36555pt -113.81097pt 314.4029pt -113.81097pt | endpoint=c2,c3 via=row2
+wire wc34 | 314.4029pt -113.81097pt 442.44025pt -113.81097pt | endpoint=c3,c4 via=row2
+node d1 | -0.45003pt -196.77396pt 117.10643pt -158.88531pt | class=cc,inside=row3
+node d2 | 127.58733pt -196.77396pt 245.14378pt -158.88531pt | class=cc,inside=row3
+node d3 | 255.62466pt -196.77396pt 373.18112pt -158.88531pt | class=cc,inside=row3
+node d4 | 383.66202pt -196.77396pt 501.21848pt -158.88531pt | class=cc,inside=row3
+wire wd12 | 58.3282pt -177.82964pt 186.36555pt -177.82964pt | endpoint=d1,d2 via=row3
+wire wd23 | 186.36555pt -177.82964pt 314.4029pt -177.82964pt | endpoint=d2,d3 via=row3
+wire wd34 | 314.4029pt -177.82964pt 442.44025pt -177.82964pt | endpoint=d3,d4 via=row3
+node mb | -93.89413pt -297.72263pt 449.82727pt -214.8183pt | 
+node tikz@f@1 | -58.42119pt -319.85306pt 414.35432pt -302.8439pt | adjacent=mb
+origin pgfid1 -93.89413pt -319.65306pt 501.33719pt 83.43423pt 614.295pt 794.96999pt

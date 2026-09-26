@@ -1,0 +1,335 @@
+% 附录 A–D：判定矩阵全表 / 扫描族速查 / 复现指南 / 时间线与图数据约定
+% 数据源：notes/sweep/README.md · tools/sweep/README.md · notes/sweep/reproduce.md · notes/sweep/timeline.md · figure-book §0
+\chapter{判定矩阵全表}
+\label{app:matrix}
+
+46 个目标按判定分四档收表：隐藏上传 confirmed 17 家、披露失真与条件触发 11 家、休眠/合规/clean 10 家、未审计或覆盖不足 8 家。要点列逐条摘自 \ep{notes/sweep/README.md} 判定矩阵，压缩为一句；file:line 锚点统一相对 \ep{<corpus>/extracted/<tid>/}（\ep{<corpus>/} 为本地证据仓根目录），逐家完整叙述见第~\ref{ch:clients}~章与各 \ep{<target>.md} 判定页。
+
+\section{隐藏上传 confirmed（17 家）}
+
+{\footnotesize
+\begin{longtable}{@{}p{2.6cm}p{1.8cm}p{2.3cm}p{1.7cm}p{5.8cm}@{}}
+\toprule
+目标 & 厂商 & 版本 & 判定 & 要点 \\
+\midrule
+\endfirsthead
+\toprule
+目标 & 厂商 & 版本 & 判定 & 要点 \\
+\midrule
+\endhead
+\midrule
+\endfoot
+\bottomrule
+\endlastfoot
+AStudio & iFlytek & 3.4.1 & hidden-upload & 三条常开管线并行：session jsonl 全量转录上传、小时级日志上报、placebo 开关的 OTLP 每轮 prompt 与工具内容；AES 埋点密钥硬编码 \\
+MiniMax Desktop & MiniMax & 3.0.73 & hidden-upload & eval capture 每轮上传完整 LLM 上下文（含文件原文）与工作区清单，登录即开、零 consent 面；"Help improve" 为 placebo 开关 \\
+Cursor & Anysphere & 3.21.16 & hidden-upload & codebase-telemetry v2：shadow-git packfile 随每 agent 请求发 \ep{api2.cursor.sh}；范围含 \ep{\textasciitilde/.claude} \ep{\textasciitilde/.codex} \ep{\textasciitilde/.agents}；privacy off 时密钥发服务端；策略 fail-open \\
+Qoder & Alibaba & 1.31.0 & hidden-upload & Merkle-diff 文件上传 \ep{center.qoder.sh}；自动索引默认开（文件数低于 10k）；consent flag 在服务端；RSA+AES-GCM \fn{EncryptedLogService} \\
+CodeBuddy IDE & Tencent & 4.12.0 & hidden-upload & 四条独立外发通道全部服务端门控、UI 不可见：\ep{/file/history} 文件全文、\ep{/code/report} 编辑快照、codebase 逐文件原文传 COS、扩展日志打包入桶 \\
+Comate IDE (Zulu) & Baidu & 3.10.1 & hidden-upload & \fn{CodebaseArchiveUploader} 每次查询前后执行运行时从服务端拉取的 \ep{upload\_to\_bos.sh}；零 UI，仅限内网环境触发 \\
+Trae intl & ByteDance & 3.5.91 & hidden-upload & 服务端驱动的日志采集管线（ZCode 同构两份实现）加伪装反馈单；零 consent 面，仅 \ep{storeRegion} 门控 \\
+CodeFlicker & Kuaishou & 1.0.29 & hidden-upload & \ep{@ks-radar/electron-log-recall} 每 10min 轮询，服务端点名任意路径（\ep{\textasciitilde/} 与 env 展开、无白名单、递归 glob）打包 tar.gz 拉回 \\
+aiXcoder & aiXcoder & 5.3.0 & hidden-upload & 隐藏上传加服务端任意文件拉取（\ep{reference\_files\_needed} 支持 \ep{../} 穿越工作区外文件）；stat-code 守护进程每次编辑传全文 \\
+CodeBuddy CLI & Tencent & 2.157.0 & hidden-upload & 纯服务端遥控管线：日志收集 $\to$ zip $\to$ COS STS $\to$ putObject $\to$ 回报；\ep{allWorkspaces} 扫全部工作区加同厂商跨产品日志（\ep{extraUploadPathsProvider} 为未实现 DI 空壳，已复核推翻） \\
+Copilot Chat & Microsoft & 0.48.1 & hidden-upload & external ingest 把工作区文件全文 POST \ep{api.github.com/external/code/ingest}；隐藏设置 \ep{onExp} 门控且服务端可远程翻转 \\
+JoyCode & JD & 3.8.71 & hidden-upload & csr-core 登录即自动 merkle 与原文上传（声明的开关是死代码）；Shenyi WS 远程拉文件；commit 钩子走明文 HTTP 传原文 \\
+iFlyCode & iFlytek & 3.4.2 & hidden-upload & RAG \ep{incbatchload} 源码原文自动上传零 consent（UI 谎称「本地代码库」）；SM4 代码监控默认开、key 硬编码 \\
+Qodo Gen & Qodo & 2.2.6 & hidden-upload & commit 完整 diff、accept 代码片段、任务目录树均由纯服务端 flag 门控；UI 零披露 \\
+Tabnine & Tabnine & 0.35.0 & hidden-upload & \ep{/log/v1} 每次 write/edit 上传完整生成内容；\ep{/attribution/recitation/v2} 写入前 snippet 上传；纯服务端 flag 门控 \\
+Zencoder & Zencoder & 3.85.9005 & hidden-upload & 每次 run 的 finally 上传完整会话轨迹（含文件内容）；唯一开关 \ep{telemetry.enabled} 未声明；OTLP 默认开、RudderStack 恒真 \\
+Kiro & AWS & 1.1.14 & hidden-upload & \fn{ActivityLogPublisher} 每 3s 把完整会话转录（含文件内容）POST \ep{runtime.kiro.dev}，无开关；另有休眠的工作区上传 SDK \\
+\end{longtable}
+}
+
+\section{披露失真 / 条件触发（11 家）}
+
+{\footnotesize
+\begin{longtable}{@{}p{2.6cm}p{1.8cm}p{2.3cm}p{1.7cm}p{5.8cm}@{}}
+\toprule
+目标 & 厂商 & 版本 & 判定 & 要点 \\
+\midrule
+\endfirsthead
+\toprule
+目标 & 厂商 & 版本 & 判定 & 要点 \\
+\midrule
+\endhead
+\midrule
+\endfoot
+\bottomrule
+\endlastfoot
+CodeArts IDE & Huawei & 26.9.102 & 披露失真 & ZCode 同构 OBS 管线（register $\to$ credential $\to$ OBS $\to$ callback 经 \ep{localhost:4096} \fn{agentkernelServer}），但属 UI 可见特性；TLS 校验被关 \\
+Amp & Sourcegraph & 0.0.1790179256 & 条件触发 & git push 整树到厂商仅在 sandbox/orb/headless 模式自动执行；交互 TUI 不触发 \\
+auggie & Augment & 0.36.0 & 披露失真 & \ep{find-missing} $\to$ \ep{batch-upload} 整库镜像明文上传；TUI consent 真实但文案只说 "index"；\ep{--print}/\ep{--mcp} 模式跳过提示 \\
+Qodo Command & Qodo & 0.36.0 & 条件触发 & 单条 WSS 承载全量上下文与工具结果；服务端 \ep{base\_url} 可整体重定向 egress 面；shell \ep{cat} 自动批准无目录限定 \\
+Copilot CLI & GitHub & 1.0.88 & 披露失真 & \ep{local\_diff\_snapshot} 把 git diff 内容经受限遥测发出（客户端无开关）；无整包上传 \\
+CrabCode & Acosmi & 1.1.15 & 条件触发 & \ep{git bundle --all} 与 WIP 全仓上传：用户触发但 \ep{/ultrareview} 强制、GrowthBook 可翻转；还转发活 OAuth token \\
+Droid & Factory & 0.225.2 & 条件触发 & daemon \fn{push\_cwd\_file\_to\_url}（presigned S3 直传 cwd 任意文件）加默认开会话同步与 workstream 自动发布 \\
+Lingma & Alibaba & 2.6.10 & 披露失真 & 无整包上传（Go 调用图级否定）；文件保存即自动 POST 代码块到 embedding API，服务端 flag 门控、本地零开关 \\
+Warp & Warp & 0.2026.09.16 & 披露失真 & indexing 传真实代码片段（有 consent）；handoff 快照默认开、仅 \ep{--no-snapshot} 可关；cloud 会话存储默认开 \\
+Qoder CLI & Alibaba & 1.1.62 & 披露失真 & 无每轮隐藏上传；remote-control artifact 通道呈三段式形状但有 registry 边界；\ep{aiCodeTracking} 默认开；UI 文案全 XOR 混淆 \\
+CodeArts CLI & Huawei & 26.9.3 & 披露失真 & 非隐藏（显式 \ep{/codebase/init}）但卫生恶劣：\ep{.env*} 白名单进 zip、launcher 全局关 TLS 校验 \\
+\end{longtable}
+}
+
+\section{休眠 / 部分 / clean（10 家）}
+
+{\footnotesize
+\begin{longtable}{@{}p{2.6cm}p{1.8cm}p{2.3cm}p{1.7cm}p{5.8cm}@{}}
+\toprule
+目标 & 厂商 & 版本 & 判定 & 要点 \\
+\midrule
+\endfirsthead
+\toprule
+目标 & 厂商 & 版本 & 判定 & 要点 \\
+\midrule
+\endhead
+\midrule
+\endfoot
+\bottomrule
+\endlastfoot
+Antigravity & Google & 2.5.5 / 2.17.0 / 1.2.7 & dormant & 完整 git-bundle 上传管线存在但此 build 无条件禁用；Clearcut opt-out 只脱敏仍上传 \\
+Fitten & Fitten & 1.1.4 & dormant & 完整管线休眠（\fn{getUploadProjectConfig()="Off"} 硬编码）；但 10min 明文 HTTP beacon 活着，裸 IP 端点 \\
+Raccoon & SenseTime & 1.0.15 & partial & 无批量管线；休眠的服务端可控 embeddings 外发开关；遥测 "anonymous" 文案与持久 UUID 矛盾 \\
+Pieces & Pieces & pieces-os 12.6.2 & user-initiated & 备份管线形状同 ZCode 但是诚实标注的手动特性，用户触发合规；备份内容极宽（OCR/剪贴板/音频转写） \\
+Kimi Desktop & Moonshot & 1.0.2 & refuted-clean & 反馈上传为死代码；Remote Control relay 披露加 opt-in；大陆区元数据遥测 \\
+Devin Desktop & Cognition & 3.10.35 & clean & pclntab 调用图核实无内容外发管线；多条 egress 为披露的产品固有特性 \\
+Claude Code & Anthropic & 2.1.281 & clean & 基线：凭证 $\to$ 直传 $\to$ 注册拓扑存在但全披露、多层 consent 门控 \\
+JB AI/Junie & JetBrains & 262.2144.120 & clean & 索引写契约全为零调用者的服务端协议面；JCP 分析镜像默认开（元数据级瑕疵） \\
+GitLab Duo & GitLab & 6.91.0 & clean & 全部外发为声明式特性；self-managed 遥测强开小瑕疵 \\
+MiMo-Code & Xiaomi & 0.1.15 & clean & MIT OpenCode fork 开源可全量核；唯一瑕疵 \ep{tracking.miui.com} 元数据指标默认开未文档化 \\
+\end{longtable}
+}
+
+\section{未审计 / 覆盖不足（8 家）}
+
+{\footnotesize
+\begin{longtable}{@{}p{2.6cm}p{1.8cm}p{2.3cm}p{1.7cm}p{5.8cm}@{}}
+\toprule
+目标 & 厂商 & 版本 & 判定 & 要点 \\
+\midrule
+\endfirsthead
+\toprule
+目标 & 厂商 & 版本 & 判定 & 要点 \\
+\midrule
+\endhead
+\midrule
+\endfoot
+\bottomrule
+\endlastfoot
+InsCode & --- & 2.2.11 & partial & 仅 4 族扫描：\ep{agent\_assets} 模块扫描其他 agent（claude/codex/cursor/kimi/zcode/trae）的会话资产目录，另有签名 NDJSON 遥测导出；高危信号待复核 \\
+Bito & --- & 1.7.0 & partial & 已解包未扫：\ep{extension.js} 有 snapshot/encrypt/OSS/createGzip 密集命中，优先补 \\
+Rovo & Atlassian & acli 1.3.39 & gated & agent binary 在 \ep{as.atlassian.com} 令牌门后，payload 未获取 \\
+CodeFuse & --- & IDE 0.7.0 & gated & VS Code 插件分发渠道已关死（登录、审批、域名收编内网）；仅 win 替代包 \\
+Blackbox 等 4 家 & --- & --- & gated & Blackbox、CodeGPT、CodeBuddy ext、Kepler 未获取，blocker 记录见各自页面 \\
+\end{longtable}
+}
+
+\evid{notes/sweep/README.md 判定矩阵 · 逐家判定页 \ep{notes/sweep/<target>.md} · \ep{<corpus>/evidence/<tid>/journal-digest.json}}
+
+\chapter{扫描族与判定口径速查}
+\label{app:families}
+
+本章是速查表，不动机不展开：族定义照 \ep{tools/sweep/agent-teardown-sweep.js} 字面量清单，判定口径照 \ep{tools/sweep/README.md}。方法论证见第 2 章。
+
+\section{七族扫描定义}
+
+{\footnotesize
+\begin{longtable}{@{}p{1.6cm}p{3.4cm}p{9.3cm}@{}}
+\toprule
+族 & 关注点 & 关键字面量（节选） \\
+\midrule
+\endfirsthead
+\toprule
+族 & 关注点 & 关键字面量（节选） \\
+\midrule
+\endhead
+\midrule
+\endfoot
+\bottomrule
+\endlastfoot
+pack & 上传前的打包与序列化 & \ep{createGzip} \ep{gzip} \ep{tar-stream} \ep{archiver} \ep{jszip} \ep{snapshot} \ep{workspaceSnapshot} \ep{createTar} \ep{.tar.gz} \ep{pack(} \\
+crypto & 载荷混合加密与密钥包装 & \ep{aes-256-ctr} \ep{aes-256-gcm} \ep{rsa-oaep} \ep{publicEncrypt} \ep{keyWrap} \ep{SPKI} \ep{crypto.subtle} \ep{sessionKey} \\
+cloud & 对象存储直传与 STS 凭证 & \ep{aliyuncs} \ep{PostObject} \ep{x-oss} \ep{cos.ap-} \ep{myqcloud} \ep{PutObject} \ep{amazonaws} \ep{storage.googleapis} \ep{myhuaweicloud} \ep{bcebos} \ep{presigned} \ep{upload-credential} \ep{SecurityToken} \ep{STS} \ep{callback} \ep{FormData} \ep{policy} \\
+egress & 外发端点、遥测与上传 API & \ep{/api/} \ep{upload} \ep{ingest} \ep{telemetry} \ep{statsig} \ep{sentry} \ep{amplitude} \ep{segment} \ep{posthog} \ep{datadog} \ep{beacon} \ep{collect} \ep{batch} \ep{/log} \\
+index & 工作区遍历与索引机 & \ep{indexing} \ep{codebase} \ep{workspace} \ep{repoWiki} \ep{embedding} \ep{readdir} \ep{ripgrep} \ep{glob} \ep{gitignore} \ep{.git} \ep{tree-sitter} \ep{fileHash} \ep{manifest} \ep{fileList} \\
+consent & consent 门控、设置键、UI 文案 & \ep{telemetry} \ep{privacy} \ep{optOut} \ep{consent} \ep{anonymous} \ep{indexingEnabled} \ep{improve} \ep{experience} \ep{dataCollection} \ep{toggle} \\
+urls & 全部 URL 字面量普查 & \ep{rg -o -N 'https?://[A-Za-z0-9.\_\textasciitilde:/?\#@!\$\&()*+,;=\%-]+'}；只标记形似 upload/ingest/snapshot/index/collect/telemetry/credential/sts 的端点 \\
+\end{longtable}
+}
+
+命中登记格式为 \ep{file:line} 加 snippet 加 assessment。二进制（\ep{.node}、ELF、\ep{.class}）用 \ep{rg -a} 或 \ep{strings} 管道 \ep{rg}；vendored \ep{node\_modules} 里的字面量命中须区分「第三方 SDK 自带」与「应用自接」，只计后者。
+
+\section{判定口径}
+
+{\footnotesize
+\begin{longtable}{@{}p{4.0cm}p{10.4cm}@{}}
+\toprule
+判定 & 速查含义 \\
+\midrule
+\endfirsthead
+\toprule
+判定 & 速查含义 \\
+\midrule
+\endhead
+\midrule
+\endfoot
+\bottomrule
+\endlastfoot
+hidden-upload & 工作区或会话内容离机，无 consent 面或 consent 失真（placebo 开关、understated 文案） \\
+under-disclosed opt-in & 有真门控开关但 UI 文案不提上传（ZCode 式 understatement） \\
+user-initiated & 显式用户触发：日志上传、反馈、handoff \\
+disclosed-egress & 披露且 opt-in：遥测、relay、媒体上传特性 \\
+dormant & 管线存在但此 build 无条件禁用 \\
+clean & 双镜 refuted，无内容外发管线 \\
+partial / gated & 覆盖不完整或获取被拦 \\
+\end{longtable}
+}
+
+执行纪律三条。一，每个 suspicious 命中走双镜：evidence 镜追到 socket/HTTP 调用点证「内容确实离机」，refute 镜尽力证伪（死代码、vendored SDK 未接线、已披露特性）；两镜都 refuted 才判 clean。二，\ep{refuted} 字段与 \ep{\_lens} 在调用点侧绑定，不采信 agent 自报。三，lane 返回的 \ep{upload\_pipeline=true} 只表示存在任意外发通道（元数据遥测算），不等于隐藏上传；判定读 lane 的 \ep{finding} 文本与 consent lane。
+
+\evid{tools/sweep/README.md · tools/sweep/agent-teardown-sweep.js · \ep{evidence/\_global/} 跨目标扫描产物}
+
+\chapter{复现指南（压缩版）}
+\label{app:reproduce}
+
+命令逐字摘自 \ep{notes/sweep/reproduce.md}。审计窗口 2026-09-22 至 09-25（reproduce.md 记至 09-24，差一日为素材口径差异），厂商可能已发新版，复现前先核对版本号与安装包 sha256（16 位前缀表见该文「安装包指纹」节）。安全约束：纯静态分析，不运行目标二进制、不绕登录；安装包不超过 1GB（个别目标可覆写上限）、解出不超过 2GB、不写 \ep{/tmp}。
+
+\section{通用流水线（4 步）}
+
+{\footnotesize
+\begin{longtable}{@{}p{2.0cm}p{8.0cm}p{4.4cm}@{}}
+\toprule
+步骤 & 动作 & 登记 \\
+\midrule
+\endfirsthead
+\toprule
+步骤 & 动作 & 登记 \\
+\midrule
+\endhead
+\midrule
+\endfoot
+\bottomrule
+\endlastfoot
+1. acquire & 按形态选无鉴权渠道：marketplace \ep{vspackage} 直链（VS Code 扩展）；\ep{plugins.jetbrains.com/api/plugins/\{id\}/updates} 两段式（JetBrains）；\ep{npm view \{pkg\} dist.tarball}（stub 壳包须追 \ep{optionalDependencies} 平台二进制）；官网 deb/tar.gz；GitHub Release、snap、APT 源、应用内更新 manifest & \ep{installer\_path}、版本号、sha256 \\
+2. extract & 解包命令矩阵见表~\ref{tab:unpack}；无 Linux 构建的桌面端用 win NSIS 替代，JS 载荷与平台无关 & \ep{extract\_dir} \\
+3. scan & 对 \ep{extract\_dir} 跑 \ep{rg -F -n -i} 七族字面量（族定义见附录~\ref{app:families}） & \ep{file:line} + snippet + assessment + suspicious \\
+4. verify & 双镜对抗：evidence 镜证「内容离机」，refute 镜证伪 & \ep{refuted} / \ep{reason} / \ep{per\_hit[]} \\
+\end{longtable}
+}
+
+未 refuted 的目标进 5 条 deep lane：\ep{pipeline}（端到端链每跳给 file:line）、\ep{consent}（开关真实性与文案如实度）、\ep{scope}（过滤清单与大小上限）、\ep{exfil}（凭证签发与解密权归属）、\ep{altpaths}（全外发普查）。
+
+\begin{table}[!htb]
+\centering\footnotesize
+\caption{解包命令矩阵}
+\label{tab:unpack}
+\begin{tabular}{@{}p{4.6cm}p{9.8cm}@{}}
+\toprule
+对象 & 命令 \\
+\midrule
+\ep{.deb} / \ep{.rpm} & \ep{ar x pkg.deb \&\& tar xf data.tar.xz}（\ep{data.tar.\{gz,xz,zst\}} 都有可能） \\
+\ep{.tar.gz} / \ep{.zip} / \ep{.vsix} / \ep{.snap} / NSIS & \ep{7z x pkg}（snap 为 squashfs 也能解） \\
+asar（Electron 打包） & \ep{npx asar extract resources/app.asar app/}；新应用多为 \ep{resources/app/} 裸目录 \\
+Bun 单文件 ELF & \ep{objcopy --dump-section .bun=bundle.js binary}（编译后 JS 模块图在 \ep{.bun} section） \\
+AppImage & \ep{./x --appimage-extract}（在目标 extract dir 内运行） \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+已知坑三条：marketplace \ep{vspackage} 偶发返回 gzip 包裹的 zip，先 \ep{file} 判型再 \ep{7z x} 自动穿透；Bun ELF 里 \ep{rg} 不到明文时切 \ep{.bun} section 或 \ep{strings} 看 \ep{/\$bunfs/root/} 清单；minified bundle 行号极长，锚点用 \ep{rg -n '<标识符>'} 重新定位。
+
+\section{九个深度目标的获取与解包}
+
+\ep{…/publishers/...} 前缀统一指 marketplace 无鉴权直链 \ep{https://marketplace.visualstudio.com/\_apis/public/gallery}。证据目录指针：\ep{<corpus>/evidence/<tid>/}（\ep{journal-digest.json} 为按目标拆出的全部 agent 结果）；file:line 相对 \ep{<corpus>/extracted/<tid>/}。
+
+\medskip\noindent\textbf{ZCode（基线）v2.2.0–v3.14.0}：官方更新通道 deb，\ep{latest-linux.yml} 列版本与 sha512（manifest API \ep{zcode.z.ai/api/v1/releases/electron/manifest}）；\ep{ar x \&\& tar xf data.tar.xz}。59 版 provenance 记录（版本格式与获取渠道清单）存档于本仓 \ep{manifest/provenance.json}，安装包 sha256 指纹见 reproduce.md「安装包指纹」节与 \ep{evidence/\_global/installer-hashes.json}；v3.14.0 起对照开源树 \ep{refs/ZCode/}。
+
+\noindent\textbf{Copilot Chat 0.48.1}：\ep{…/publishers/GitHub/vsextensions/copilot-chat/0.48.1/vspackage}，unzip。
+
+\noindent\textbf{Cursor 3.21.16}：\ep{cursor.com/api/download?platform=linux-x64\&releaseTrack=stable}，JSON 内 \ep{debUrl} 指向 \ep{downloads.cursor.com}；\ep{ar x} 加 \ep{tar xf data.tar.xz}；未打 asar。
+
+\noindent\textbf{CodeBuddy IDE 4.12.0}：腾讯 CDN \ep{CodeBuddy-linux-x64-4.12.0.37847260-b4c35ed0-cn.deb}（159MB），deb 解包；\ep{usr/share/buddycn/resources/app/} 裸目录。
+
+\noindent\textbf{CodeBuddy CLI 2.157.0}：\ep{npm view @tencent-ai/codebuddy-code dist.tarball}，55MB tgz，\ep{tar xzf}。
+
+\noindent\textbf{Qoder 1.31.0}：\ep{qoder.com/download} 为 Next.js 无静态链，抓 webpack chunk grep \ep{downloadUrl} 得 \ep{download.qoder.com/release/latest/qoder-ide\_amd64.deb}；deb 解包；未打 asar。
+
+\noindent\textbf{Trae intl 2.3.73738}（存档包版本；判定页记 3.5.91 线）：\ep{trae.ai} 下载页 deb 372MB 国际版，端点为 \ep{trae.ai}/\ep{byteintl.net}/\ep{byteoversea.com}；deb 解包；未打 asar。
+
+\noindent\textbf{Kiro 1.1.14}：\ep{prod.download.desktop.kiro.dev} deb（185MB）；release 元数据存档 \ep{installers/kiro/metadata-linux-x64-stable.json}；app 裸目录。
+
+\noindent\textbf{MiniMax Desktop 3.0.73}：无 Linux 构建，用官方 win NSIS \ep{filecdn.minimax.chat/public/minimax-agent-prod/release/MiniMax Code Setup 3.0.73.exe}（419MB），\ep{7z x} 得 app-asar 与 app-root。
+
+\evid{notes/sweep/reproduce.md · \ep{evidence/\_global/installer-hashes.json} · \ep{manifest/provenance.json}}
+
+\chapter{时间线数据与图数据约定}
+\label{app:timeline}
+
+\section{隐藏上传管线版本考古（9 目标）}
+
+逐版本下载历史安装包、解包、\ep{rg -a -F} 扫特征字面量，二分定位签名首现版本。明细与覆盖缺口见 \ep{notes/sweep/timeline.md}；「$\le$」表示最老可获取构建即阳性，真首现可能更早。
+
+{\footnotesize
+\begin{longtable}{@{}p{2.3cm}p{3.2cm}p{4.0cm}p{1.5cm}p{3.4cm}@{}}
+\toprule
+目标 & 首现（版本 · 日期） & 默认开时点 & 移除 & 备注 \\
+\midrule
+\endfirsthead
+\toprule
+目标 & 首现（版本 · 日期） & 默认开时点 & 移除 & 备注 \\
+\midrule
+\endhead
+\midrule
+\endfoot
+\bottomrule
+\endlastfoot
+ZCode（基线） & v2.3.0 · 2026-05-16 & v2.6.0（05-20）默认翻转；v3.1.0 开关装饰化 & v3.14.0 · 09-19 & 九家中唯一回撤；v2.5.0 前为诚实 opt-in \\
+Trae intl & $\le$1.0.5431 · $\le$2025-01-20 & 构建即常开（endpoint 硬编码 product.json）；登录门 $\le$1.0.12894 移除 & --- & 历 4 阶段演化：区域门、bootConfig 端点、SSH 回拉、ToB 伪装反馈单 \\
+CodeBuddy IDE & codebase lane $\le$0.1.8.\allowbreak2412962 · $\le$2025-07-22；完整签名 4.3.3.\allowbreak18223695 · 2026-01-26 & 始终服务端 flag（\ep{productFeatures}，4.4.1 起改 \ep{llm-data}），本地无默认 & 5.6.2 实现消失仅剩 flag 声明 & lane 早于可获取历史；aiide/workbuddy 双产品线版本号按发布日排序 \\
+CodeBuddy CLI & 1.25.0-next.\allowbreak bd7d324.\allowbreak20251107 · 2025-11-07 & 从不本地默认：纯服务端推送 \ep{config.log.upload} & --- & 引入时无 enabled 字段（truthy 对象即开）；2.97.4（2026-05-21）起 enabled 加环境白名单加 HMAC 回报 \\
+Qoder & 0.3.0 · 2026-01-19 & 服务端 flag \ep{upload.missing.files.enabled}；伴随条件 autoIndex 本地默认开 & --- & 上传基础设施早于可获取历史；EMU 次边界 (1.20.1,1.31.0] \\
+Cursor & 字面量 2.5.17 · 2026-02-17；接线 2.6.11 · 03-03 & 从未本地默认：\ep{codebase\_telemetry\_v2} 服务端 flag 加 privacy enum==4 & --- & schema 先行约两周后接线；Lane B \fn{captureAndSendDebuggingData} 收敛 (0.44.9,1.0.1] \\
+Kiro & 0.12.155 · 2026-05-06 & 1.0.52 起区域白名单；1.0.116 起 endpoint 自动派生、白名单区域默认开 & --- & 三段式放宽：sandbox $\to$ 加 kiro-ide $\to$ 去 env/client 检查；全程无用户开关 \\
+Copilot Chat & 0.48.1 · 2026-05-15 & 从未：default false，\ep{onExp} 隐藏设置服务端可远程翻转 & --- & 首个可获取携带版；marketplace 0.45.1 $\to$ 0.48.1 间零条目、7 探针全 404 \\
+MiniMax Desktop & 3.0.58 · 2026-08-04 & 引入即默认开：\ep{enabled:true} 硬编码，仅 packaged 加登录门槛 & --- & 注入宿主 \ep{@mavis/local-runtime}（3.0.53 已有）；3.0.62 起独立 snapshot 端点 \\
+\end{longtable}
+}
+
+横向模式三条：Trae、Qoder 上传基础设施、CodeBuddy IDE codebase lane 在最老可获取构建中已存在，无法判定是否 v1 即有；硬编码常开仅 MiniMax（\ep{enabled:true}）与 Trae（endpoint 硬编码、后改服务端下发），其余全部服务端侧门控，无一目标在引入时带 consent 面；Cursor 先发死 proto 描述隔约两周接线，MiniMax 先发行宿主模块再注入 eval capture，均为「schema/宿主先行」。
+
+\section{figure-pack.json 字段约定}
+
+九个 \ep{figure-pack.json} 存于 \ep{<corpus>/evidence/<tid>/}，为第~\ref{ch:clients}~章全部配图的数据源；约定照 figure-book §0。
+
+{\footnotesize
+\begin{longtable}{@{}p{3.4cm}p{11.0cm}@{}}
+\toprule
+字段 & 含义 \\
+\midrule
+\endfirsthead
+\toprule
+字段 & 含义 \\
+\midrule
+\endhead
+\midrule
+\endfoot
+\bottomrule
+\endlastfoot
+\ep{target} / \ep{name} & tid 与展示名 \\
+\ep{mech.stages[]} & 管线有序阶段表，六列：\ep{stage} 阶段名；\ep{detail} 该阶段行为；\ep{endpoint} 出网端点（无则标「无」）；\ep{gate} 门控表达式；\ep{wire} 线上字节描述；\ep{code\_anchor} 代码锚点 \\
+\ep{mech.payload\_example} & 重构样本说明：一次触发的全部离机字节 \\
+\ep{mech.volume} & 体量估算三键：\ep{per\_event} 单事件量；\ep{per\_session\_day} 触发密度折算日量；\ep{assumptions} 估算前提 \\
+\ep{mech.diagram\_nodes} & 泳道图节点清单 \\
+\ep{mech.secondary\_channels} & 副通道列表 \\
+\ep{evi.exhibits[]} & 举证片段：\ep{file}（绝对路径加行号区间）、\ep{quote}、\ep{title}、\ep{why} \\
+\ep{evi.disclosure[]} & 宣称对照：\ep{claim} 宣称原文、\ep{source} 出处、\ep{actual} 实测行为、\ep{verdict} 失真分级 \\
+\ep{evi.timeline[]} & 版本考古行：\ep{version}、\ep{date}、\ep{state}、\ep{note} \\
+\ep{evi.gate\_evolution} & 门控演化散文 \\
+\end{longtable}
+}
+
+锚点记法：\ep{code\_anchor} 内 \ep{v2.3.0:app/out/host/index.js:13762} 表示「版本：解包相对路径：行号」；minified bundle 内位置记 \ep{@<字节偏移>} 或 \ep{\textasciitilde<近似行>}；\ep{refs/ZCode/...} 指 zai-org/ZCode 开源树；exhibits 的 \ep{file} 为绝对路径原样收录。
+
+枚举取值。\ep{state}：\ep{absent}（特征缺席）、\ep{present}（管线存在但非默认开或无法判定默认）、\ep{default-on}（生效配置下默认开）、\ep{removed}（功能族移除）。\ep{verdict}：\ep{honest}（如实）、\ep{understated}（轻描淡写）、\ep{misleading}（误导）、\ep{contradicted}（与代码直接矛盾）、\ep{absent}（无任何对应宣称）。
+
+\evid{notes/sweep/timeline.md · notes/sweep/figure-book.md §0 · \ep{evidence/<tid>/figure-pack.json}}

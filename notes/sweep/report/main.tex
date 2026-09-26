@@ -1,0 +1,115 @@
+% 《静默的同步》—— 46 家 agentic coding 客户端隐藏上传管线批量逆向审计
+% 编译：xelatex -interaction=nonstopmode main.tex（两遍出目录）
+\documentclass[UTF8,fontset=fandol,zihao=-4]{ctexrep}
+\usepackage[a4paper,margin=2.4cm,top=2.6cm,bottom=2.6cm]{geometry}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs,tabularx,longtable,array,multirow}
+\usepackage{enumitem}
+\usepackage{seqsplit}
+\usepackage[most]{tcolorbox}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\usepackage[hidelinks,bookmarksnumbered]{hyperref}
+
+\graphicspath{{../figures/}}
+
+% ---------- figure-viz 同版调色板 ----------
+\definecolor{vteal}{HTML}{4F8FA5}
+\definecolor{vorange}{HTML}{EE995B}
+\definecolor{vcoral}{HTML}{C95B5B}
+\definecolor{vviolet}{HTML}{8A74B5}
+\definecolor{vgreen}{HTML}{6FA287}
+\definecolor{vgold}{HTML}{D9A93C}
+\definecolor{vblue}{HTML}{5478A0}
+\definecolor{vrose}{HTML}{B9748F}
+\definecolor{vgray}{HTML}{85898F}
+\definecolor{vink}{HTML}{3A3F45}
+\definecolor{vmist}{HTML}{D8DBDE}
+\color{vink}
+
+% ---------- 宏 ----------
+\DeclareRobustCommand{\ep}[1]{\texttt{\seqsplit{#1}}}   % 端点 / 路径 / 字段（可断行等宽）
+\DeclareRobustCommand{\fn}[1]{\texttt{\seqsplit{#1}}}   % 函数 / 符号（可断行等宽）
+\newtcolorbox{verdictbox}[1]{enhanced,breakable,
+  colback=#1!8,colframe=#1!75!black,boxrule=0pt,leftrule=3pt,
+  sharp corners,left=7pt,right=7pt,top=5pt,bottom=5pt,fontupper=\small}
+\newcommand{\evid}[1]{\par\smallskip\noindent{\footnotesize\color{vgray}证据锚点：#1}\par}
+
+% ---------- 版式 ----------
+\titleformat{\chapter}[block]
+  {\normalfont\LARGE\bfseries}{\thechapter}{0.8em}{\LARGE}
+\titlespacing*{\chapter}{0pt}{-14pt}{18pt}
+\titleformat{\section}{\normalfont\Large\bfseries}{\thesection}{0.7em}{}
+\titlespacing*{\section}{0pt}{14pt}{8pt}
+\setlist{nosep,leftmargin=1.6em}
+\setlength{\parskip}{2pt}
+\setlength{\emergencystretch}{2em}
+\setlength{\headheight}{13.5pt}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\color{vgray}静默的同步 · 隐藏上传管线批量逆向审计}
+\fancyhead[R]{\small\color{vgray}\thepage}
+\renewcommand{\headrulewidth}{0.3pt}
+
+\title{静默的同步}
+\author{}
+\date{2026-09}
+
+\begin{document}
+
+% ---------- 封面 ----------
+\IfFileExists{cover-hero.pdf}{%
+  \newgeometry{margin=0pt}
+  \thispagestyle{empty}
+  \noindent\includegraphics[width=\paperwidth]{cover-hero.pdf}
+  \restoregeometry
+}{\begin{titlepage}
+  \centering\vspace*{6cm}
+  {\Huge\bfseries 静默的同步}\\[12pt]
+  {\Large 46 家 AI 编程客户端隐藏上传管线的批量逆向审计}\\[24pt]
+  {\large 2026-09}
+\end{titlepage}}
+
+\input{sections/abstract}
+\tableofcontents
+\clearpage
+
+\input{sections/intro}      % 第 1 章：从一次拆除说起
+\input{sections/method}     % 第 2 章：审计方法
+
+% ---------- 第 3 章：逐家解剖 ----------
+\chapter{逐家解剖：九条管线}
+\label{ch:clients}
+
+九家深度目标的选取不看体量看形态：它们共同覆盖了隐藏上传的全部主流实现形态——服务端点名粒度、consent 失真手法、卫生防线的有无，在每一家上都呈现不同取值。先给结论形状：图~\ref{fig:iso} 把九家的外发通道压进同一张三段式槽位图。
+
+六家共用同一槽位形状——服务端点名并签发 $\to$ 集中传输段 $\to$ 登记回服务端账本，差别只在传输载体：ZCode 走 OSS PostObject，CodeBuddy IDE 与 CLI 走 COS STS，Trae 走 ImageX STS，Qoder 走硬编码签名头的 multipart PUT 到 \ep{center.qoder.sh}，Cursor 以 packfile 分块 RPC 实现同一结构、不依赖对象存储。
+
+另三家走 API 直收——载荷经产品 API 面入栈，没有独立的传输段；其中 Copilot 仍以 \ep{/batch} 在控制面实现了等价的点名能力。以下按槽位形状分两组展开。
+
+\begin{figure}[!htb]
+\centering
+\includegraphics[width=\linewidth]{f15-pipeline-iso.pdf}
+\caption{三段式凭证管线同构对比。虚线灰格=该槽位不存在；右列形状判定。}
+\label{fig:iso}
+\end{figure}
+
+\input{sections/zcode}
+\input{sections/trae}
+\input{sections/cursor}
+\input{sections/codebuddy-ide}
+\input{sections/codebuddy-cli}
+\input{sections/qoder}
+\input{sections/copilot}
+\input{sections/kiro}
+\input{sections/minimax}
+
+\input{sections/cross}      % 第 4 章：横向对比
+\input{sections/discussion} % 第 5 章：讨论
+
+\appendix
+\input{appendix/appendix}
+
+\end{document}

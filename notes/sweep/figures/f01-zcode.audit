@@ -1,0 +1,38 @@
+node title | -85.35823pt 61.46889pt 328.18843pt 80.79482pt | class=txt
+region laneClient | -8.5359pt -61.17322pt 469.47026pt 49.7923pt | 
+region laneServer | -8.5359pt -125.1919pt 469.47026pt -75.39958pt | adjacent=laneClient
+region laneOss | -8.5359pt -174.98419pt 469.47026pt -137.99597pt | adjacent=laneServer
+node tikz@f@1 | -73.51622pt 1.73601pt -11.95009pt 29.56218pt | adjacent=laneClient
+node tikz@f@2 | -51.66563pt -113.83185pt -11.95009pt -88.1828pt | adjacent=laneServer
+node tikz@f@3 | -64.59492pt -169.8501pt -11.95009pt -143.13007pt | adjacent=laneOss
+node a0 | 7.37476pt 5.95181pt 69.448pt 48.10822pt | class=cnode,inside=laneClient
+node a1 | 81.35162pt 5.95181pt 143.42487pt 48.10822pt | class=cnode,inside=laneClient
+node a2 | 155.32893pt 5.95181pt 217.40218pt 48.10822pt | class=cnode,inside=laneClient,adjacent=a1
+node a3 | 225.03807pt 5.95181pt 287.11131pt 48.10822pt | class=cnode,inside=laneClient,adjacent=a2
+wire wa01 | 38.41138pt 27.03001pt 112.38824pt 27.03001pt | endpoint=a0,a1 via=laneClient
+wire wa12 | 112.38824pt 27.03001pt 186.36555pt 27.03001pt | endpoint=a1,a2 via=laneClient
+wire wa23 | 186.36555pt 27.03001pt 256.07469pt 27.03001pt | endpoint=a2,a3 via=laneClient
+node uigate | 4.26773pt -19.27667pt 153.34665pt -6.3306pt | inside=laneClient,adjacent=b1
+node s1 | 201.56464pt -124.2196pt 287.82288pt -77.79504pt | class=snode,inside=laneServer
+node s2 | 326.75655pt -124.2196pt 413.01479pt -77.79504pt | class=snode,inside=laneServer
+node leg | 1.42271pt -120.40967pt 178.27031pt -81.60498pt | inside=laneServer
+node b1 | 169.5553pt -55.2214pt 231.62854pt -13.065pt | class=cnode,inside=laneClient,adjacent=rm
+node b2 | 254.91353pt -55.2214pt 316.98677pt -13.065pt | class=cnode,inside=laneClient,adjacent=b1
+node b3 | 321.77722pt -55.2214pt 383.85046pt -13.065pt | class=cnode,inside=laneClient,adjacent=b2
+node b4 | 392.90907pt -55.2214pt 454.98232pt -13.065pt | class=cnode,inside=laneClient,adjacent=b3
+wire wb12 | 200.59192pt -34.1432pt 285.95015pt -34.1432pt | endpoint=b1,b2 via=laneClient
+wire wb23 | 285.95015pt -34.1432pt 352.81384pt -34.1432pt | endpoint=b2,b3 via=laneClient
+wire wb34 | 352.81384pt -34.1432pt 423.9457pt -34.1432pt | endpoint=b3,b4 via=laneClient
+node rm | 24.27518pt -46.21667pt 123.67941pt -36.29608pt | inside=laneClient
+wire wcred1 | 256.07469pt 5.95181pt 244.69376pt -77.79504pt | endpoint=a3,s1 via=laneClient,laneServer
+node n1 | 252.74487pt -73.60811pt 262.24994pt -64.10304pt | adjacent=laneClient,adjacent=laneServer,adjacent=s1,adjacent=b2
+wire wcred2 | 201.56464pt -77.79504pt 200.59192pt -55.2214pt | endpoint=s1,b1 via=laneClient,laneServer
+node n2 | 185.31158pt -73.60811pt 194.81665pt -64.10304pt | adjacent=laneClient,adjacent=laneServer,adjacent=s1,adjacent=b1
+node o1 | 264.16035pt -175.4344pt 430.08641pt -137.54576pt | class=onode,inside=laneOss
+wire wup | 423.9457pt -55.2214pt 430.08641pt -137.54576pt | endpoint=b4,o1 via=laneClient,laneServer,laneOss
+node n3 | 436.26498pt -105.75986pt 445.77005pt -96.25479pt | inside=laneServer
+wire wcb | 347.12338pt -137.54576pt 369.88567pt -124.2196pt | endpoint=o1,s2 via=laneOss,laneServer
+node n4 | 328.14447pt -136.20406pt 337.64954pt -126.69899pt | adjacent=laneServer,adjacent=laneOss,adjacent=s2,adjacent=o1
+node mb | -85.35823pt -270.36595pt 407.14815pt -190.63329pt | 
+node tikz@f@4 | -64.30382pt -289.6393pt 386.09373pt -275.48723pt | adjacent=mb
+origin pgfid1 -85.35823pt -289.4393pt 469.47026pt 80.59482pt 614.295pt 794.96999pt

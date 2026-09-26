@@ -1,0 +1,71 @@
+% 第 4 章 · 横向对比 —— 九家×六维矩阵 / 引入时序 / 共性模式 / 基线对照
+\chapter{横向对比}
+\label{ch:cross}
+
+逐家解剖回答「这条管线长什么样」，横向对比回答「这些管线加起来是什么」。九家压进同一张六维矩阵（图~\ref{fig:matrix}）后，逐家视角里看不见的列级规律浮出来：分歧集中在服务端点菜能力与密钥卫生两列；consent 列九行零及格，失真手法逐家不同。
+
+\begin{verdictbox}{vcoral}
+九家无一家在引入管线时携带真 consent。矩阵的承重墙是 consent 列——整列失守；分级主战场在前两列：点菜粒度与 denylist 卫生。最差三家（Trae、Cursor、CodeBuddy CLI）已从密钥「漏网」升级为对 agent 资产的主动收集：Trae、Cursor 打包竞品客户端的转录与记忆，CodeBuddy CLI 收集同厂商姊妹产品的日志目录。
+\end{verdictbox}
+
+\begin{figure}[!t]
+\centering
+\includegraphics[width=\linewidth]{f10-matrix.pdf}
+\caption{九家×六维判定矩阵：服务端点菜能力、密钥/denylist 卫生、consent 开关位置、加密姿态、引入时点、单事件量级。单元格按判定着色。}
+\label{fig:matrix}
+\end{figure}
+
+\section{判定矩阵}
+
+点菜能力分出四档光谱。最重一端是任务队列遥控：CodeBuddy CLI 轮询 \ep{/v2/logs/upload\_task/check}，任务恒带 \ep{allWorkspaces:true} 收全部工作区日志；Trae 轮询 \ep{/device/log/check}，任务消费 \ep{startTime}/\ep{endTime} 任意时间窗、\ep{windowId} SSH 远程回拉、\ep{packCodexSessions} 竞品旗标与 \ep{extra.maxSize} 上限——收不收、收什么由服务端任务决定（休眠 .so 孪生的任务模型更含 \ep{path\_patterns} 任意 glob 与 \fn{RunCommand}）。
+
+其次是逐文件点名：Copilot 的 \ep{/batch} 由服务端自选 \ep{doc\_ids}，Qoder 经 \fn{bfDiscover} 拿 \ep{notFoundFileIds} 回捞缺漏，CodeBuddy IDE 以 merkle 比对加 \ep{/api/v1/code\_edits/missing} 点名。
+
+第三档只签发参数：ZCode credential 响应携 \ep{snapshot\_id}、\ep{max\_size} 与 callback 模板，Cursor 签发 \ep{upload\_uuid} 与 \ep{chunk\_size}——点菜粒度止步于「全量还是增量」。最轻一档不点菜：Kiro 每 3s 定时推，MiniMax 每次物理 LLM 调用推全量请求体，服务端不参与挑选。
+
+卫生列呈两极。Copilot 有 177 扩展名 denylist，全套私钥扩展名在内，basename 层却连 \ep{.env}、\ep{id\_rsa}、\ep{.npmrc} 都放行；MiniMax 对照面 workspace-indexing 有约 25 种 secret denylist，为全场最优，但不在头条 eval lane 上。
+
+最差三行不是「漏」而是「收」：Trae 的 \ep{packCodexSessions} 旗标打包 \ep{\textasciitilde/.codex/sessions}、\ep{\textasciitilde/.claude/projects} 与 \ep{\textasciitilde/.cursor} 三家竞品转录；Cursor 的 dot-dir allowlist 主动收 \ep{\textasciitilde/.claude}（13 项）、\ep{\textasciitilde/.codex}（14 项）、\ep{\textasciitilde/.agents}；CodeBuddy CLI 收集面不设扩展名过滤，\ep{\textasciitilde/.workbuddy/logs} 等跨产品日志目录按修改窗全收。
+
+加密列几乎单行取值。仅 ZCode 做客户端加密（AES-256-CTR + RSA-OAEP，私钥在厂商）；Trae 只包装设备指纹头，Qoder 只封诊断 zip 内日志，MiniMax 的加密 key 以 HKDF(accessToken) 派生且与 Bearer 同请求上送，Cursor 路径加密的 key 随包发服务端。判定与加密无关：载荷离机的事实不依赖密文形态。
+
+consent 列没有光谱可言：九行清一色零有效 consent，失真的八种手法见共性模式一节。
+
+\section{引入时序}
+
+\begin{figure}[!t]
+\centering
+\includegraphics[width=\linewidth,height=0.82\textheight,keepaspectratio]{f11-intro-timeline.pdf}
+\caption{九家隐藏管线的引入与演化时序（2025-01 至 2026-09）。左截断标记=最老可获取构建即阳性；行尾终点为回撤。}
+\label{fig:timeline}
+\end{figure}
+
+2025 年只有三家早鸟：Trae $\le$1.0.5431（$\le$2025-01-20）、CodeBuddy IDE codebase lane $\le$0.1.8（$\le$2025-07-22）、CodeBuddy CLI 未列表 nightly 1.25.0-next.bd7d324（2025-11-07）。2026 年密集落地六家：Qoder 0.3.0（01-19）、Cursor 字面量 2.5.17（02-17）接线 2.6.11（03-03）、Kiro 0.12.155（05-06）、Copilot 0.48.1（05-15）、ZCode v2.3.0（05-16）、MiniMax 3.0.58（08-04）——5 月上半月连落三家，隐藏上传从个别厂商的做法变成当季交付物。
+
+回撤只有两处：CodeBuddy IDE 5.6.2 上传实现整体消失、仅剩 flag 声明；ZCode v3.14.0（2026-09-19）随开源移除管线，为九家中唯一带终点的行（第~\ref{sec:zcode}~节）。
+
+三家左截断——Trae、CodeBuddy IDE、Qoder 最老可获取构建即阳性，absent 版本不存在，引入时点只是上界，管线完全可能随 v1 首发。Copilot 是窗口截断：0.45.1 至 0.48.1 之间 7 个版本探针全 404，真首发可能在不可获取的 0.46/0.47。另一类先行信号是 schema 与宿主：Cursor 先发零调用者 proto（2.5.17）隔两周接线，MiniMax 先发行宿主 \ep{@mavis/local-runtime}（3.0.53）再注入 eval capture（3.0.58）——「当前不外发」的预置管线是常态。
+
+\section{共性模式}
+
+第一条是三段式标准件。图~\ref{fig:iso} 已给出槽位形状：服务端点菜/签发 → 集中传输 → 登记回报，六家同构而传输载体五种——ZCode 走 OSS PostObject 表单直传，Qoder 走带硬编码签名头的 multipart PUT 至 \ep{center.qoder.sh}，CodeBuddy IDE 与 CLI 走 COS STS，Trae 走 ImageX STS，Cursor 以 Connect-RPC packfile 分块实现同构、不经对象存储；Copilot、Kiro、MiniMax 三家传输段与产品 API 面合一，走 API 直收。
+
+凭证面同样收敛：除 Qoder 以包内硬编码密钥自签外，客户端从不持长期云凭证，签发与点菜权全在服务端——服务端是唯一硬门。
+
+第二条是 consent 绑定服务端。九家里仅 MiniMax（\ep{enabled:true} 硬编码）与 Kiro（区域白名单）的门槛留在本地，其余七家的生效门是服务端旋钮：Copilot 的 ExP-TAS treatment var 可中会话热翻，CodeBuddy IDE 读 productFeatures，CodeBuddy CLI 等服务端推送 \ep{config.log.upload}，Qoder、Cursor、Trae、ZCode 各挂 flag、任务标志或 \ep{data:null} 拒发。
+
+本地侧摆出的 consent 全是摆设：MiniMax \ep{data\_contribution} 零行为消费，Copilot \fn{promptForExpandedLocalIndexing} 零调用，Trae \ep{telemetry.feedback.enabled} 从未注册，Cursor onboarding 后 \fn{hasEnoughTimeElapsedSinceOnboarding} 满 24h 静默自写 enum4，Qoder \ep{data\_policy\_not\_agree} 仅置 \ep{X-Stilla=2} 标记上传照走，CodeBuddy IDE 状态栏用 \fn{setUploadingProgress} 显示 "Workspace code searching…"，Kiro 与 CodeBuddy CLI 零开关。
+
+第三条，任意路径拉回是最恶劣形态。九家中的上限是 CodeBuddy CLI：任务恒 \ep{allWorkspaces:true} 扫全部工作区，\fn{collectRecentIdeLogFiles} 再递归收集同厂商跨产品日志目录，任意路径原语 \ep{extraUploadPathsProvider} 则以未实现 DI 空壳形态休眠在包内。
+
+放到 46 家全景，边界被推得更远：CodeFlicker 的 \ep{@ks-radar/electron-log-recall} 每 10min 轮询，服务端点名任意路径（家目录与 env 展开、无白名单、递归 glob）打包拉回；aiXcoder 的 \ep{reference\_files\_needed} 支持 \ep{../} 穿越工作区。采集边界从「工作区」推到「整台机器」。
+
+第四条是卫生差异叠加 fail-open（出错也放行）。denylist 有与无的差距已见判定矩阵一节；更一致的是 fail-open 姿态：Cursor \fn{CheckCodebaseTelemetryPolicy} RPC 出错即放行，Qoder \ep{data\_policy\_not\_agree} 置标不拦截，CodeBuddy CLI \ep{allowedEnvironments} 校验失败仍激活——策略「检查」不构成拦截。
+
+\section{与基线对照}
+
+同一批扫描里有四家 clean，构成判定的另一半。Claude Code 2.1.281 存在与九家同形的「凭证→直传→注册」拓扑，但每个外发特性全披露且挂多层 consent 门控；GitLab Duo 6.91.0 的全部外发为声明式特性；JB AI/Junie 的索引写契约全是零调用者的服务端协议面——预置管线不等于在用；Devin Desktop 3.10.35 经 pclntab 调用图核实无内容离机。
+
+判定点收敛为两条：内容是否离机，consent 是否诚实有效。「有遥测」与「有隐藏上传」的分界不在流量大小，而在这两条上——三段式拓扑本身无罪，基线四家把它用在文档化的特性上；九家的问题是同一条拓扑配上一个失效或缺席的 consent 面。
+
+\evid{notes/sweep/figure-book.md §10 · notes/sweep/timeline.md · notes/sweep/deep-report.md §四–§五 · notes/sweep/README.md 判定矩阵}

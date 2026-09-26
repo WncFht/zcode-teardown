@@ -1,0 +1,61 @@
+\section{Trae 国际版（字节跳动）3.5.91 —— 点菜管线与竞品转录收集}
+\label{sec:trae}
+
+\begin{verdictbox}{vcoral}
+确认隐藏上传：服务端任务队列点菜的日志采集管线，同构实现一式两份（JS 管线加原生 .so 孪生），另有伪装成用户反馈单的 ToB 采集线。卫生为九家最差——一个服务端旗标即打包三家竞品客户端的会话转录。
+\end{verdictbox}
+
+九家中唯一越出自身目录边界的一家。共享进程服务 \fn{Qk}（\ep{sharedProcessMain.js:122}）无条件实例化，驱动两条服务端点菜的采集循环：消费版每 10 分钟轮询一次任务队列，SAAS 版每小时轮询并在上传前先伪造一张用户反馈单。全程零 consent 面——消费版唯一的本地检查是 \ep{storeRegion!==USTTP}，USTTP 为字节内部美国区属性，国际版用户恒真，等于无门。
+
+\begin{figure}[!t]
+\centering
+\includegraphics[width=\linewidth,height=0.82\textheight,keepaspectratio]{f08-trae-intl.pdf}
+\caption{Trae 国际版日志采集管线（3.5.91 / build 2.3.73738）。点菜、打包、直传、登记四段全部由服务端驱动；WSS 推送与 IPC 旁路可跳过轮询路径上唯一的 action 过滤。}
+\label{fig:trae-pipe}
+\end{figure}
+
+\subsection{机制}
+
+四段式拓扑（图~\ref{fig:trae-pipe}）。\fn{Qk.start()} 在启动 30 秒后挂起 \ep{uc.C=10*60*1e3} 间隔，轮询 \ep{/icube/api/v1/device/log/check}，未登录也跑；响应里的 \ep{startTime}/\ep{endTime}/\ep{windowId}/\ep{packCodexSessions}/\ep{extra.maxSize} 即菜单本体。轮询路径要求 \ep{action} 为 \ep{log} 或 \ep{deviceLog}，而 frontier WSS 长连的 \ep{deviceLog} 帧（\fn{onDidFrontierUploadDeviceLog}）与渲染进程 IPC \ep{MESSAGE\_CENTER\_BACK\_LOG} 直入 \fn{ib()}，跳过这道过滤——服务端可秒级点菜。
+
+\fn{ib()} 按任务 id 去重后并行分派：\fn{mb()} 本地采集；任务带 \ep{windowId} 时 \fn{gb()}/\fn{hb()} 经 \ep{aLogServiceChannel} 令 SSH 远程主机自打包拉回，传后删远程副本。收集器 \fn{jk()} 取时间窗内会话日志目录加 \ep{aha\_log/}，打包器 \fn{P2} 经 \ep{tar.create} 产出 \ep{logs\_<start>\_<end>\_<id>.tar.gz}。凭证段 \fn{getToken()} 向 \ep{/icube/api/v1/report/token} 换 ImageX STS 三件套，上传器 \fn{Kk.h}（vendored \ep{@byted-icube/uploader}）以 V4 签名走 \ep{ApplyImageUpload}→\ep{upload/v1/<oid>}→\ep{CommitImageUpload} 直传 \ep{imagexsg-normal.trae.ai}，\fn{lb()} 把对象 Uri 回报 \ep{/device/log/callback}。
+
+同一 \fn{Qk} 还分出三条支路（表~\ref{tab:trae-lanes}）。其中 ToB（面向企业租户）支路的 \fn{vb()} 先 POST \ep{/tob-admin/report/create} 造单——\ep{issue\_type} 填「其他」、\ep{issue\_description} 写 "[ToB Auto Collect] The report was automatically uploaded by the client"、\ep{contact\_info} 填本人邮箱——再走 presigned PUT 上传，服务端视角里这是一张用户主动提交的工单。
+
+\begin{table}[!t]
+\centering\small
+\begin{tabularx}{\linewidth}{@{}lXX@{}}
+\toprule
+支路 & 触发 & 凭证与落点 \\
+\midrule
+aLog 消费版主线 & \ep{/device/log/check} 10min 轮询、WSS/IPC 旁路 & \ep{/report/token} 换 STS → ImageX → \ep{/device/log/callback} \\
+ToB SAAS & \ep{log\_collection/poll} 1h 轮询 & 伪造 \ep{/tob-admin/report/create} → \ep{pre\_signed\_url} PUT → \ep{/report/log/callback} \\
+原生 .so 孪生 & \ep{use\_logifier} 门控轮询（休眠） & \ep{/logifier/retrieval/tasks} → \ep{/logifier/files} 分片 → \ep{/tasks/ack} \\
+SSH-remote & 任务带 \ep{windowId} & 远程自打包拉回本地 → 同一 ImageX → 同一 callback \\
+\bottomrule
+\end{tabularx}
+\caption{同一 \fn{Qk} 的四条采集通道共享点菜—凭证—直传—回执拓扑；凭证全部服务端短签。}
+\label{tab:trae-lanes}
+\end{table}
+
+\subsection{载荷}
+
+常规一份 tar.gz 约 0.1–3MB；服务端打 \ep{packCodexSessions:true} 时涨至 5–50MB 以上——\fn{I2()} 并入三家竞品转录：\fn{Ok()} 收 \ep{\textasciitilde/.codex/sessions} 近三天，\fn{Nk()} 把 \ep{\textasciitilde/.claude/projects} 下任一文件 mtime 落进三天窗的目录整棵复制（限深 \ep{Pk=12}），\fn{Tk()} 收 \ep{\textasciitilde/.cursor} 的 agent-transcripts。完整 JSONL 转录含 prompt 原文、代码与粘贴的 secret，随包直传。
+
+过滤清单薄到近乎没有：deny 表 \ep{Ga} 只挡两个文件名（\ep{.DS\_Store}、\ep{log\_uploader.log}），无凭据名匹配；超过 \ep{maxSize}（默认 200MB，服务端 \ep{extra.maxSize} 可调）的文件不进包，绝对路径仍列入随包上传的 manifest。
+
+载荷本体是明文 gzip——全链唯一加密字段是请求头 \ep{x-icube-device} 里的 RSA-OAEP 设备指纹，而同级头 \ep{x-icube-did} 直接携带明文 deviceId，这层包装仅是形式。
+
+\subsection{consent 面}
+
+九个探测版本无一 consent 面：无任何 \ep{telemetry.*} 设置项被读取，\ep{product.json} 遥测 schema 被剥光（\ep{enableTelemetry:true} 但设置 UI 无项，\ep{privacyStatementUrl} 填 \ep{example.com}）；\ep{telemetry.feedback.enabled} 幻影键被读取五处、从未注册 schema，实际由服务端策略控制。唯一披露上传的 UI 是 Report Issue 弹窗，默认全勾，其 \ep{report/create} 端点与 ToB 自动线共用——「App Logs」的表述低估同一条管线。
+
+宣称对照给原文。"Codebase files always remain on your local device"（官方文档）被日志管线直接证伪；企业版页面 "Zero Retention … No logs retained" 与 SAAS 租户每小时一份 tar.gz 留存相悖；"Privacy Mode" 限遥测的博客宣称只门 mssdk/tea 分析 SDK，aLog 主管线不做隐私模式检查。
+
+隐私政策自称数据存于新加坡与马来西亚，\ep{product.json} 却硬编码美国端点 \ep{icube-normal.traeapi.us}；厂商自家博客的「美国、新加坡、马来西亚」写法证实政策隐去了美国存储。
+
+\subsection{时间线}
+
+最老可获取构建 1.0.5431（2025-01-20）即带完整管线，不存在 absent 版本，且是唯一带登录门的版本。1.0.12894（2025-05-21）移除登录门并加 WSS push；1.0.27215（2026-01-03）加区域门、\ep{bootConfig.iCubeApi} 端点下发与 RSA 设备指纹头；2.3.12786（2026-03-09）加 SSH 远程回拉与休眠原生孪生 \ep{liblogifier\_retrieval.so}——其任务模型含服务端 \ep{path\_patterns}、正则 \ep{filters} 与 \fn{RunCommand} 任意命令执行，能力超过 JS 管线；2.3.73738（2026-08-18，本构建）加 ToB 伪装反馈单、\ep{packCodexSessions} 与 ImageX STS；2.3.88407（2026-09-22）最新构建签名集不变。门控演化去用户化：唯一的用户侧门在第一年被移除，此后的门全部位于服务端。
+
+\evid{evidence/trae-intl/figure-pack.json · notes/sweep/trae-intl.md · sharedProcessMain.js:98--102 · evidence/trae-intl/anatomy/logifier.strings.txt}

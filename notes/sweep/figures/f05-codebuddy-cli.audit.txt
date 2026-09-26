@@ -1,0 +1,5 @@
+tex: notes/sweep/figures/f05-codebuddy-cli.frag
+xelatex: ok
+check_audit: clean
+check_coverage: clean
+check_readback: clean

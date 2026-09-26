@@ -1,0 +1,12 @@
+\chapter*{摘要}
+\addcontentsline{toc}{chapter}{摘要}
+
+ZCode 的工作区快照上传管线被拆除并随开源移除之后，剩下的问题是：这是孤例，还是行业通行做法。本报告对 46 个闭源 agentic coding 客户端做了批量静态逆向：7 个扫描族定位外发通道，双镜对抗判定，再对确认目标做版本考古与逐家深剖——\ep{/api/v1/snapshot/upload-credential}、ZCode v2.3.0–v3.14.0、Trae \ep{packCodexSessions}、Copilot \ep{/external/code/ingest/batch} 等字面量逐条入档。
+
+结论分三层。其一，17 家确认存在隐藏上传——工作区文件、会话转录或日志内容在无诚实 consent 面的情况下离机。
+
+其二，形状高度收敛：9 家深度目标中 6 家共用同一条「凭证签发 → 直传 → 登记回报」三段式拓扑，客户端从不持长期云凭证，真正的同意门全部在服务端。
+
+其三，consent 面整列失守：9 家无一家在引入管线时携带真 consent，假开关、隐藏键、谎称文案、服务端热翻、零开关五种形态齐备。
+
+逐家深剖覆盖 ZCode（对照基线，已移除）、Trae、Cursor、CodeBuddy IDE/CLI、Qoder、Kiro、Copilot Chat、MiniMax Desktop。证据全部来自分发包二进制静态分析，审计窗口 2026-09-22 至 09-25，不运行目标、不绕过登录。

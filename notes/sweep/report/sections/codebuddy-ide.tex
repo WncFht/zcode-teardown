@@ -1,0 +1,52 @@
+% 第 3 章 · 三段式同构组 —— CodeBuddy IDE
+\section{CodeBuddy IDE（腾讯）4.12.0 —— 一扇四门}
+\label{sec:codebuddy-ide}
+
+\begin{verdictbox}{vcoral}
+确认隐藏上传：四条服务端门控外发通道——工作区文件经 merkle-diff 逐文件原文直传 COS 桶 \ep{copilot-codebase-1258344699}，打开文件全文与逐编辑 diff 另走 \ep{/file/history}、\ep{/code/report}，扩展日志定时打包入桶；本地 32 个设置键无一覆盖数据行为，上传进行中状态栏谎称 searching。
+\end{verdictbox}
+
+三段式同构组的第二个样本。CodeBuddy IDE 4.12.0 是 VS Code 1.106.1 fork，内嵌腾讯 genie 扩展（\fn{activationEvents:["*"]}），出网固定在 \ep{copilot.tencent.com} 与腾讯云 COS。其 codebase 通道是 ZCode OSS 管线的 1:1 复刻——handshake 定状态、\ep{upload\_addr} 换 STS、\fn{putObject} 逐文件直传、\ep{/index} 登记——但管线不止一条：审计在单个 bundle 内数出四条各自独立门控的内容外发通道（图~\ref{fig:cbide-pipe}），钥匙全部在服务端。
+
+\begin{figure}[!t]
+\centering
+\includegraphics[width=\linewidth,height=0.82\textheight,keepaspectratio]{f04-codebuddy-ide.pdf}
+\caption{四条通道各持独立远端 flag（A \ep{/file/history}、B \ep{/code/report}、C codebase 直传 COS、D 日志入桶）；C 道为 handshake--STS--\fn{putObject}--index 三段式，上传期间状态栏显示 searching。}
+\label{fig:cbide-pipe}
+\end{figure}
+
+\subsection{机制}
+
+C 道是主干。\fn{CodebaseManagerImpl.doInitialize} 订阅 \fn{combineLatest}（uid $\times$ \ep{productFeatures.Codebase}）：登录或 flag 值翻转即 \fn{buildIndex()}，flag 熄灭则 abort 在飞构建——本地没有任何设置参与该判定。\fn{MerkleTreeBuilder} 随后全树遍历工作区：gitignore 叠加 175 条 \ep{DEFAULT\_IGNORE}（含 \ep{.env*}，无密钥名黑名单），逐文件 md5，文件数封顶 5000（远端 \ep{maxAutoIndexableFiles} 可调）。
+
+\fn{handshakeWithRetry} POST \ep{/v2/codebase/handshake} 上送 \ep{\{codebaseId,fileCount,rootHash\}} 换 \ep{\{status,codebaseID\}}——角色同 ZCode 的 \ep{upload-credential}：字节未动，服务端先裁定同步状态。\ep{STATUS\_OUT\_OF\_SYNC} 时 \fn{diffTree} 按目录 BFS 拉取 \ep{/v2/codebase/tree/\{id\}?path=} 比对子树哈希：即便零文件上传，服务端已拿到全工作区绝对路径树与逐文件 md5；缺漏与哈希不符者进 added/modified 名单，逐文件回捞原文。
+
+\ep{GET /v2/codebase/upload\_addr/\{id\}} 下发 COS STS 临时凭证（\ep{tmpSecretId}/\ep{tmpSecretKey}/\ep{token}，\ep{ScopeLimit} 锁前缀），\fn{putObject} 把每个文件经 \fn{createReadStream} 原文推进硬编码桶，并发 $\le$20、单文件 $\le$4 次重试；最后 POST \ep{/v2/codebase/index/\{id\}} 登记，每秒轮询 \ep{/progress/\{id\}} 至 100\%。\fn{scheduleSync} 以 600 秒周期递归重跑整条链——任何编辑 $\le$10 分钟落桶，abort 是唯一中断面。
+
+其余三道并行，互不共享开关。A 道 \fn{FileHistoryTracker}：任意打开文件的全文首快照加逐编辑 \ep{\{old\_text,new\_text,cursor,diff\_stats\}}，触发面覆盖 agent prompt、新会话、关闭、失焦 30s、\ep{AUTO\_REPORT\_INTERVAL} 2h、退出补报与随机 $\le$5 文件重放，POST \ep{/file/history}，仅远端 \ep{llm-data} flag 门控（\ep{GET /v3/config/llm\_data}，fail-closed（出错即关闭））。
+
+B 道 \ep{/code/report}：append-only 编辑快照，零上下文 diff 加 \ep{repoUri/branch/commit}，约 20\% 中链记录携带改前全文 \ep{baseContent}，门 \ep{CodeEditsTracking}；服务端可经 \ep{/api/v1/code\_edits/missing} 按 URI 点名回捞缺失文件史。
+
+D 道：远端 \ep{config.log.upload.interval} 驱动，最近一日扩展日志（含 prompt 文本、绝对路径、工具参数）zlib 打包，\ep{/v2/logs/upload\_credentials} 换票后入桶；\fn{upload.log.silence} 命令全程无 UI。
+
+\subsection{载荷}
+
+两千文件工作区首建约 15--25MB 原文入桶，增量周期 20KB--1MB；单文件 $\le$1MiB、5000 文件封顶，单次重建上限约 5GB。每会话每天至多 144 个完整周期，活跃编辑日 15--30MB。所有旋钮远端可调——\ep{config.codebase} 下发 \ep{syncInterval}/\ep{maxAutoIndexableFiles}/\ep{maxUploadConcurrency}/\ep{COSBucket}/\ep{endpoint}/\ep{timeout}，桶名都能换。
+
+卫生面不对称。FileFilter（31 条 glob 加前 10 行凭证标记扫描）只管 A 道，agent 会话上报路径整体绕过它；B 道无过滤器；C 道 \ep{DEFAULT\_IGNORE} 无密钥名黑名单——\ep{.npmrc}、\ep{.pem}、\ep{.key}、\ep{.aws/}、\ep{.ssh/} 原文直传厂商桶。
+
+\subsection{consent 面}
+
+genie 的 \ep{package.json} 共 32 个 \ep{codingcopilot.*} 设置键，逐一枚举核验：无一为数据收集、上传或遥测开关。唯一沾边的 \ep{enableCraftCodeBase}（默认开）文案是 "Enable the Codebase Search tool"——它只注册 \fn{codebase\_search} 工具，上传由 \ep{productFeatures.Codebase} 另门控，关掉它上传照走。
+
+界面层三处文字与行为不符。会话内 chip 称插件将自动「索引本地代码库」；状态栏在 \fn{putObject} 出网期间由 \fn{setUploadingProgress} 渲染 "Workspace code searching...(\{0\}\%)"——upload 一词全程不出现；登录页写 "Triggered Anywhere, Completed Locally"。
+
+CN 隐私政策全文检索不含 /file/history、编辑快照、codebase 上传、COS、远端 flag 任何字样；\S 2.7.3 承诺 "我们不会存储您的代码"，与按 codebase 前缀持久存放的桶内容直接矛盾。产品内唯一诚实的上传披露在反馈 modal："Upload logs for troubleshooting only."——仅限用户手动触发路径。
+
+\subsection{时间线}
+
+0.1.8（2025-07-22，Wayback 首个公开构建）已带完整 codebase 道——早于可获取历史，无缺席版本可钉。file-history 道最后缺席于 4.0.0（2025-12-03）。
+
+4.3.3（2026-01-26）三 genie 合并、全签名首现，\ep{apiPath='/file/history'} 挂在通用 flag 下默认关；仅三天后 4.4.1 迁专用远端开关 \ep{llm-data}（fail-closed、缓存化）并加 2h 周期上报；4.12.0（2026-09-04，本审计解包对象）加 \fn{ConcurrencyLimiter(6)}，四道全在码。5.6.2（2026-09-25）把实现与端点整体移出 bundle，只剩 \ep{ProductFeature} 枚举声明（\ep{@default false}）——疑似改远端下发或服务端化，门控进一步黑箱化。
+
+\evid{evidence/codebuddy-ide/figure-pack.json · notes/sweep/codebuddy-ide.md · extracted/codebuddy-ide/\ldots/extensions/genie/out/extension/index.js（行：字节锚点见 figure-book \S 4.3）}

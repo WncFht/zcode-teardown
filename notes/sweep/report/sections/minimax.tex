@@ -1,0 +1,65 @@
+% 第 3 章 · API 直收组
+\section{MiniMax Desktop 3.0.73 —— 登录即开的 eval 捕获}
+\label{sec:minimax}
+
+\begin{verdictbox}{vcoral}
+确认隐藏上传：eval capture 在每次物理 LLM 调用前把完整请求体——system prompt、全 messages（含工具读到的文件原文）、tools 定义——直发 \ep{/eval/snapshot/report}，逐轮生命周期步骤另发 \ep{/eval/steps/report}；\ep{enabled:true} 硬编码，packaged + 登录即开，无开关、无 UI、无远端 flag。
+\end{verdictbox}
+
+与 ZCode 同出 mavis 血统的桌面版，把收集做成了 eval 基础设施：不打快照走对象存储，而是 Bearer 直发自家 API——本报告 API 直收组的头一个样本。捕获面覆盖 agent turn 的完整生命周期：\fn{beginTurn} 记用户消息，每次物理 LLM 调用（含重试、每个 iteration）前置快照，工具调用与结果逐条成步，\fn{finishTurn} 收尾。同包另有一条 opt-in 的 workspace-indexing 三段式上传道，作对照写入。
+
+\begin{figure}[!t]
+\centering
+\includegraphics[width=\linewidth,height=0.82\textheight,keepaspectratio]{f09-minimax.pdf}
+\caption{MiniMax Desktop 3.0.73 eval 捕获管线。唯一动态门是登录态；snapshot 与 steps 双端点共用同一 Bearer token 直发 agent.minimax.cn，服务端按 \ep{trajectory\_id} 归并轨迹。}
+\label{fig:minimax-pipe}
+\end{figure}
+
+\subsection{机制}
+
+唯一门槛在装配期（图~\ref{fig:minimax-pipe}）。主进程 \fn{resolveDesktopEvalCaptureConfig}（index.js:1086-1098）只查两件事：\fn{app.isPackaged} 且端点为 https——由 DOMAIN\_URL 直接推出 \ep{/mavis/api/v1/eval/steps/report}，不读任何设置键、远端 flag 或 consent。utility 进程 entry.js:244-258 展开配置时硬编码 \ep{enabled:true}；运行时 \fn{canReport()}（reporter.js:52-54）只再查 \fn{readLocalEvalAccessToken()}——登录态是唯一动态门。
+
+每个 agent turn 被 \fn{runWithLocalEvalReporter} 包裹（local-agent-turn-runner.js:28）。\fn{beginTurn} 先倒空预缓存的 runtime 事件，立刻上报 turn\_started 与用户消息原文，并每会话一次 enqueueMetaInfo；\fn{PiTurnRunner} 用 \fn{withLlmCallPreparedObservers}（turn.js:107-114）在每次物理 LLM 请求前调 \fn{onLLMPrepared} 钩子发快照；工具调用前后经 \fn{beforeToolCallHook}/\fn{afterToolCallHook} 记 \ep{args\_json}/\ep{result\_json}；\fn{finishTurn} 落 turn\_completed/aborted/failed。
+
+\ep{trajectory\_id} 由 sessionId 派生（payload.js:71-86），服务端按它与 snapshot 内的 \ep{session\_id}/\ep{turn\_id} 归并轨迹——管线没有独立注册端点。
+
+外发走 \fn{uploadLocalEvalRequest}（transport.js:7-16）：固定四头，\ep{Authorization:Bearer <accessToken>}、UA \ep{MiniMaxAgent}、\ep{X-Mavis-Desktop-Channel:desktop}。snapshot 无配置端点——\fn{endpointFor} 把 steps 路径尾部重写为 \ep{/eval/snapshot/report}（transport.js:48-58）。同会话上传串行（uploadTailBySession），超时 3.5s，全链路 fail-open（出错也放行）：错误仅被 logger.warn 吞掉。
+
+\subsection{载荷}
+
+snapshot 单 POST 典型 50KB–1MB，硬顶 16MiB；超限不截断，该 turn 快照整轮跳过（reporter.js:213-223）。内层 \ep{snapshot\_json}（schema \ep{mavis.cloud\_eval\_snapshot.v1}）是模型所见的完整请求体：\ep{system\_prompt}、\ep{messages} 全数组（工具结果即文件原文）、\ep{tools} 定义、\ep{thinking\_level}、\ep{target\_model}。
+
+steps 批 $\le$16 步 $\le$6MiB，单字段截 1MiB：用户/助手消息原文、工具 \ep{args\_json}、\ep{result\_json}（read\_file 结果即文件字节）、用量、生命周期事件。每会话一次 meta\_info（schema \ep{mavis.eval\_meta\_info.v1}）：工作区目录树 $\le$2000 条、按扩展名聚合的文件统计、git branch/commit、PATH 前 128 目录可执行清单 $\le$2000、25 个工程配置文件、系统指纹。runtime\_event 步还整流上送沙箱策略 before/after、逐条 violation 裁决与 goal 决策事件。
+
+脱敏只有两层：14 个 credential 形 key 值替换 \ep{[REDACTED]}，外加已收集秘密字面量打码——文件内容不遮。
+
+全线 TLS 明文 JSON，没有 ZCode 的 AES+RSA wrap；同包唯一加密的 error-report 其 key=HKDF(accessToken)，同一 token 作 Bearer 随请求上送，代码注释自述 Gateway 用同参数派生——厂商可解。重度日估算 $\approx$35–40MB（约 160 次物理调用快照加 $\approx$640 步 steps）。
+
+\subsection{consent 面}
+
+eval capture 在 3.0.73 的 UI 串、设置键、隐私政策中零条目：\ep{evalCapture} 只出现在 dist/main 装配层与 @mavis host-factory，渲染层零引用。设置页里唯一提到「你的内容」的开关 "Help improve our services"（中文位「数据用于优化体验」）是假开关：只写服务端 \ep{data\_contribution} 字段，全 bundle 仅 3 个 renderer chunk 引用、零行为消费，GET 回读非布尔按 true 渲染。
+
+对照组是同为内容外发的 workspace-indexing：有真开关「加速索引」，默认关——但文案只承诺 "generates a semantic index from the workspace to speed up code search"，实际开即全量 \ep{workspace.zip} 真字节经 presign 直传 OSS、每终态 turn 增量 revision、\ep{/query-embedding} 上送搜索 query 原文；internal/test build 强制开且忽略 put()。
+
+consent 基建在本包现成——diagnostic-bundle 有 \ep{body.confirm===true} 硬门——但 always-on 的 eval 管线从不接。包内宣称对照见表~\ref{tab:minimax-claims}。
+
+\begin{table}[!t]
+\centering
+\caption{MiniMax Desktop 3.0.73 宣称对照（包内文本逐字）。}
+\label{tab:minimax-claims}
+\begin{tabularx}{\linewidth}{@{}p{0.36\linewidth}Xl@{}}
+\toprule
+宣称原文 & 实际行为 & 判定 \\
+\midrule
+"Help improve our services \dots You can turn this off at any time." & 仅写服务端布尔；零行为消费，非布尔回读按 true 渲染 & 误导 \\
+「开启后，MiniMax Code 会基于工作区生成语义索引，加快代码搜索的速度」 & \ep{workspace.zip} 真文件字节→OSS，逐 turn 增量 + query 原文 & 误导 \\
+§1.7.2「去标识化且无法重新识别特定个人的前提下」用于模型训练 & \ep{Bearer accessToken} 随每条 POST 同送；文件原文不脱敏 & 矛盾 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{时间线}
+
+宿主先于功能：\ep{@mavis/local-runtime} 在 3.0.53（2026-07-21）已发行但 eval 字面量全 0；$\le$3.0.57（07-30）是最后一个干净版本。3.0.58（08-04）注入 eval capture，\ep{enabled:true} 引入即硬编码，快照暂作 runtime\_event 混进 steps 流。3.0.62（08-12）起快照升格为独立端点 \ep{/eval/snapshot/report}。3.0.73（09-18，审计目标）再加专用 \fn{snapshot.js} 构造器——范围在扩，而门控与 3.0.58 字节级一致：gate 零演化，consent 零演化。
+
+\evid{evidence/minimax-desktop/figure-pack.json · notes/sweep/minimax-desktop.md · \ep{app-asar/@mavis/local-runtime/dist/eval/\{reporter,payload,snapshot,transport\}.js} · \ep{app-asar/dist/main/modules/local-runtime/utility/entry.js:244-258}}
