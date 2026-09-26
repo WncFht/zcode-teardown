@@ -1,0 +1,19 @@
+{
+ "ok": true,
+ "corrections": [
+  "stage1 code_anchor: @13407841→@13406895 (old byte landed on buildConfiguration/buildIndex, not doInitialize combineLatest); class anchor @13405979→@13406188 (class CodebaseManagerImpl)",
+  "stage1 detail: 'fires on every remote-config push'→only uid change or Codebase flag-VALUE flip (distinctUntilChanged); manual rebuild deletes remote codebase only when persisted codebaseID exists",
+  "stage2 code_anchor: MAX_FILESIZE=1048576 @10274287→@10276370 (old byte was the void-0 declaration, not the assignment)",
+  "stage2 detail: 'Semaphore(maxConcurrency||4), LRU cache'→MerkleTreeServiceImpl injects maxConcurrency:100+parallel; LRUCache({max:1e4}) only on build(), plain Map+simple:!0 on simpleBuild; added anchor :4 @5912028; DEFAULT_IGNORE count ~170→175 verbatim",
+  "stage3: handshake enterpriseId key exists in code but always undefined in this build (buildConfiguration strips it→serialized body omits it); corrected detail/wire/payload_example; HandshakeStatus enum anchor @498420→@498893; typo 'codebbaseID'→'codebaseID'",
+  "stage6 detail: 'Retry ≤4 attempts'→≤4 retries / ≤5 attempts (gn 1→4); anchors @20736377→@20736633 (COS_BUCKET), @20736349→@20736604 (MAX_UPLOAD_CONCURRENCY=20)",
+  "stage7 anchor: INDEXING_TIMEOUT @20736461→@20736528; noted startBuildingIndex only fires when added|modified>0",
+  "stage8 anchor: SYNCING_PERIOD @20736481→@20736506; clarified scheduled cycles call doBuildIndex(ir,ar,4) with retry:!1 so inner 2^n·60s retries are pre-disabled (retry≤4 only applies to retry:!0 builds)",
+  "secondary_channels: /code/report anchor @3039093→@3038498 (3039093 is code_edits/missing); codenexus @4345497→@4345448 + added :1 @1273825 (port 9110) and :1 @1273071 (~/.codenexus)",
+  "secondary_channels: skill-hub stats/inc POST is in out/codebuddy/main.js @7783064 (not index.js); rewrote anchor + index.js:10 @6888649 (allowlist), :1 @1547327 (user-asset), :66 @11591357 (fail-open policy)",
+  "secondary_channels: log auto-upload '(60s)'→clarified =60 is only startAutoUploadCheck's default arg; actual period is remote config.log.upload.interval; added v2/logs/upload_check + @294929; added localProxy/receive :84 @20619902, knowledge-bases query :10 @7565351, file_upload @1655130/@1654447, presigned_url @7573038, E2B @7584190/@7582552, chat baseUrl @13317683",
+  "exhibit3 file anchor: constants byte 20736506→20736633 (COS_BUCKET literal position; quote verified verbatim there)",
+  "verified unchanged: all 6 exhibit quotes verbatim at anchors (programmatic match); all 21 disclosure claim lines verbatim; all endpoint paths/flag names/payload field names/constants; 32 codingcopilot.* keys; timeline; gate_evolution"
+ ],
+ "pack_written": true
+}

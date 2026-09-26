@@ -1,0 +1,11 @@
+{
+ "ok": true,
+ "corrections": [
+  "exhibit 4 (Workspace Path): quote was not verbatim — both template literals contain a REAL newline before the closing backtick (it lands on the next file line: '`Workspace Path: ${this.workspacePath}\\n`' and '`Workspace Path: ${e}\\n`'). Rewrote quote with actual newlines so each segment is a literal substring; anchor widened :221-222 → :221-223 (site 2's backtick is on line 223). Re-verified verbatim after fix.",
+  "stage 2 detail: IntervalTimer anchor 'dist-server/codebuddy.js:55705' impossible (file is 1740 lines) → corrected to 'dist-server/codebuddy.js:1' where IntervalTimer.cancelAndSet=setInterval is defined.",
+  "secondary_channels[0] (Galileo): cite 'dist/codebuddy.js:514,1677' wrong — line 1677 is HTML '</div>' (stale anchor also present in notes/anatomy). Corrected to 'dist/codebuddy.js:1,514,2976,2983' — :1 carries KMS generateDataKey/gzip/base62/AES/RSA envelope + /v1/{traces,metrics,logs}, :514/:2983 carry the unconditional span attrs + DISABLE_TELEMETRY/DISABLE_GALILEO gates, :2976 carries resolveGalileoConfig (enable===!0) + aegisEndpoint.",
+  "stage 3 detail + wire: '%LOCALAPPDATA%/CodeBuddyExtension/Logs' → '~/AppData/Local/CodeBuddyExtension/Logs' — code is m.join(e,'AppData','Local','CodeBuddyExtension','Logs') (homedir join, no env read); only the WorkBuddy branch reads process.env.LOCALAPPDATA (with homedir fallback).",
+  "payload_example: clientType/ideType value 'cli' → 'CLI' in 3 spots (query param, HMAC JSON body, zip filename + downloadURL) — product.json platform='CLI' feeds clientInfoProvider ideType=e?.platform."
+ ],
+ "pack_written": true
+}

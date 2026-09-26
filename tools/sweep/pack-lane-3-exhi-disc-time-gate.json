@@ -1,0 +1,265 @@
+{
+ "exhibits": [
+  {
+   "title": "Competitor-agent home dirs harvested as \"tracked codebases\" (~/.claude, ~/.codex, ~/.agents)",
+   "file": "<corpus>/extracted/cursor/usr/share/cursor/resources/app/extensions/cursor-retrieval/dist/main.js:2 @byte2439759-2441100 (function Xce)",
+   "quote": "{path:Fa.resolve(process.env.CLAUDE_CONFIG_DIR||Fa.join(e,\".claude\")),kind:Ome.DOT_CLAUDE,requiresGate:!0,watch:{style:\"allowlist\",entries:[\"agent-memory/\",\"agents/\",\"CLAUDE.md\",\"commands/\",\"history.jsonl\",\"output-styles/\",\"plans/\",\"plugins/cache/\",\"plugins/installed_plugins.json\",\"plugins/known_marketplaces.json\",\"projects/\",\"rules/\",\"skills/\"]}},{path:Fa.resolve(process.env.CODEX_HOME||Fa.join(e,\".codex\")),kind:Ome.DOT_CODEX,requiresGate:!0,watch:{style:\"allowlist\",entries:[\"AGENTS.md\",\"AGENTS.override.md\",\"agents/\",\"archived_sessions/\",\"history.jsonl\",\"hooks.json\",\"memories_extensions/\",\"memories/\",\"plugins/cache/\",\"prompts/\",\"rules/\",\"session_index.jsonl\",\"sessions/\",\"skills/\"]}},{path:Fa.join(e,\".agents\"),kind:Ome.DOT_AGENTS,requiresGate:!0,watch:{style:\"allowlist\",entries:[\"skills/\"]}}]}",
+   "why": "Xce() feeds rival-agent data (Claude Code projects/+history.jsonl, Codex sessions/+history.jsonl, ~/.agents/skills) into the snapshot pipeline; its requiresGate flag codebase_telemetry_v2_agent_dot_dirs defaults TRUE client-side."
+  },
+  {
+   "title": "Vendor's own candid per-feature egress map — compiled into the bundle, never rendered in UI",
+   "file": "<corpus>/extracted/cursor/usr/share/cursor/resources/app/out/vs/workbench/workbench.desktop.main.js:455 @byte2856001 (private-inference-features.ts module, KLc)",
+   "quote": "KLc={tab:{why:\"Every keystroke ships the file body, filename and edit history to Cursor's Tab model.\",rpcs:[\"aiserver.v1.AiService/StreamCpp\",\"aiserver.v1.AiService/CppAppend\",\"aiserver.v1.FileSyncService/FSUploadFile\",\"aiserver.v1.FileSyncService/FSSyncFile\"]},cmdk:{why:\"Sends the instruction, selection, file and reranked context to Cursor-managed models.\",rpcs:[\"aiserver.v1.CmdKService/StreamCmdK\",\"aiserver.v1.CmdKService/StreamTerminalCmdK\",\"aiserver.v1.CmdKService/RerankCmdKContext\",\"aiserver.v1.CmdKService/RerankTerminalCmdKContext\"]},\"chat-auto-title\":{why:\"Sends the first user message to Cursor; chats keep the local fallback name.\",rpcs:[\"aiserver.v1.AiService/NameTab\"]},\"commit-message\":{why:\"Sends the staged diff to Cursor.\",rpcs:[\"aiserver.v1.AiService/WriteGitCommitMessage\"]},\"branch-name\":{why:\"Sends the diff or prompt to Cursor.\",rpcs:[\"aiserver.v1.AiService/WriteGitBranchName\"]},\"conversation-classification\":{why:\"Uploads the full conversation for analytics.\",rpcs:[\"aiserver.v1.AnalyticsService/IngestConversation\"]}",
+   "why": "The dev team's internal map admits in plain words what the docs omit — keystroke-level file-body upload, full-conversation analytics — plus a codebase-indexing entry (\"Uploads file contents and paths to Cursor's embedding service\", FastUpdateFileV2) further in the same object; no view ever renders it."
+  },
+  {
+   "title": "Per-keystroke file-body gate checks paywall, never privacy mode",
+   "file": "<corpus>/extracted/cursor/usr/share/cursor/resources/app/extensions/cursor-always-local/dist/main.js:2 @byte4434390 / @byte4435824",
+   "quote": "async recordEvent(t){if(!0===o.cursor.getPrivacyMode())return void(this.isDebug()&&DA.info(\"Not recording event because privacy mode is enabled\"));\n   [... ~1.4KB later, same file ...]\nisFileSyncEnabled(){const t=\"disabled\"!==o.cursor.getPrivateInferenceEnablement()&&(0,HA.AO)(\"tab\");return!Ta&&!t&&(this._isEnabledFromServer&&(this._isFileSyncEnabled??!1)&&(o.cursor.cppEnabled()??!0)&&(e=o.cursor.cppConfig(),r=void 0!==this._accessToken,s=o.cursor.membershipType()??sa.FREE,n=\"ultra\"===s||\"pro\"===s||\"pro_plus\"===s||\"enterprise\"===s||\"free_trial\"===s||\"pro_student\"===s||\"express\"===s,void 0!==e&&!1!==e.isOn&&!(!1===r||!1===n&&!e.shouldLetUserEnableCppEvenIfNotPro)));var e,r,n,s}",
+   "why": "The gate authorizing FSSyncFile keystroke deltas (replacedString:t.text pushed via workspace.onDidChangeTextDocument) checks server flag + CPP config + paid membership — zero getPrivacyMode() calls — while a sibling recorder 1.4KB away early-returns on it: the omission is factual, not stylistic."
+  },
+  {
+   "title": "Encryption theater: obfuscated path and plaintext path+body sent in the same request",
+   "file": "<corpus>/extracted/cursor/usr/share/cursor/resources/app/extensions/cursor-retrieval/dist/main.js:2 @byte2355150-2355900 (syncFile→fastUpdateFileV2)",
+   "quote": "a.push({partialPath:{case:\"localFile\",value:{file:{relativeWorkspacePath:pme(t.relativePath,this.repoInfo.pathEncryptionScheme),contents:o},unencryptedRelativeWorkspacePath:t.relativePath,hash:r}},ancestorSpline:e,updateType:t.updateType})\n   [...]\nlet s=await this.repoClient.fastUpdateFileV2(t,this.abortController.signal);",
+   "why": "Every indexing batch to repo42.cursor.sh carries pathEncryptionScheme-encrypted relativeWorkspacePath AND unencryptedRelativeWorkspacePath plus plaintext contents:o — the wire format itself refutes \"paths are encrypted before being sent\" / \"no plaintext\" claims."
+  },
+  {
+   "title": "OOM watcher: heap snapshot + entire User dir zipped and PUT to S3 with no dialog",
+   "file": "<corpus>/extracted/cursor/usr/share/cursor/resources/app/out/main.js:200-201 @byte1920351 / @byte1905616 / @byte1906800",
+   "quote": "o=m=>{if(m.reason!==\"OOM\"){this.logService.debug(\"TracingService: ignoring non-OOM debugger pause\",m),t.isDevToolsOpened()||n.sendCommand(\"Debugger.resume\").catch(()=>{});return}if(this.logService.info(\"TracingService: paused renderer before crash\"),this._isLegacyPrivacyMode!==!1){const k={webContentsId:t.id,rendererOsPid:s};this._emitOomJsStackEvent(m,a,k,void 0,this._getCrashReportingTagsForOomWebContents(k)),t.isDevToolsOpened()||n.sendCommand(\"Debugger.resume\").catch(()=>{});return}this.logService.info(\"TracingService: taking heap snapshot\");\n   [...]\nC.file(m,{name:\"snapshots/renderer.heapsnapshot\"});for(const H of ae)C.directory(H,qt.posix.join(\"logs\",qt.basename(H)));!k&&we.existsSync(_)&&C.directory(_,\"user\");for(const H of E)C.file(H.absPath,{name:qt.posix.join(\"agent-transcripts\",H.relPath)});\n   [...]\nconst se=we.createReadStream(j),y=await Fg(n,{method:\"PUT\",body:se,headers:{\"Content-Length\":we.statSync(j).size.toString()}});",
+   "why": "CDP Debugger.paused(reason===\"OOM\") auto-fires HeapProfiler.takeHeapSnapshot then zips heapsnapshot+24h logs+the whole userData/User dir (≤2GB, incl. chat/prompt DBs)+7d agent transcripts and PUTs to a presigned cursor-user-debugging-data.s3 URL — zero consent UI; only legacy-privacy short-circuits, and the S3 host is absent from the enterprise network doc."
+  },
+  {
+   "title": "24-hour silent consent upgrade: onboarding click → privacy enum 4 without re-prompt",
+   "file": "<corpus>/extracted/cursor/usr/share/cursor/resources/app/out/vs/workbench/workbench.desktop.main.js:19516 @byte35726124 / @byte35727710",
+   "quote": "this.hasEnoughTimeElapsedSinceOnboarding=()=>{const H=this.timeElapsedSinceOnboarding();return H===void 0?!1:H>864e5},this.disableNoStorageModeIfEnoughTimePassedSinceOnboarding=()=>{this.hasEnoughTimeElapsedSinceOnboarding()&&this._reactiveStorageService.applicationUserPersistentStorage.eligibleForSnippetLearning&&this._reactiveStorageService.setApplicationUserPersistentStorage(\"enoughTimeElapsedSinceOnboarding\",!0)}\n   [...]\nthis.inferPrivacyModeFromLegacyValues=()=>{const W=this._reactiveStorageService.applicationUserPersistentStorage.noStorageMode;return W===!0?cl.NO_STORAGE:W===void 0?cl.UNSPECIFIED:this._reactiveStorageService.applicationUserPersistentStorage.eligibleForSnippetLearning&&this._reactiveStorageService.applicationUserPersistentStorage.enoughTimeElapsedSinceOnboarding===!0?cl.USAGE_CODEBASE_TRAINING_ALLOWED:cl.USAGE_DATA_TRAINING_ALLOWED}",
+   "why": "One click on the \"Recommended\" share card seeds eligibleForSnippetLearning; after 864e5 ms (24h) the client self-writes enoughTimeElapsedSinceOnboarding and infers enum 4 (USAGE_CODEBASE_TRAINING_ALLOWED) — the exact value the codebase_telemetry_v2 packfile lane gates on — with no second consent."
+  }
+ ],
+ "disclosure": [
+  {
+   "claim": "Privacy Mode ensures your code is never used for training by Cursor or other AI model providers.",
+   "source": "evidence/cursor/disclosure/doc-privacy.md:8 (fetched 2026-09)",
+   "actual": "A training gate exists (enum!=4), but the claim says nothing about collection: FileSync keystroke bodies, plaintext indexing payloads, debugging zips and conversation blobs still leave the device; the narrow wording implies broader protection than it provides.",
+   "verdict": "understated"
+  },
+  {
+   "claim": "With Privacy Mode enabled, none of your questions or code will ever be stored or learned from by us or any third-party.",
+   "source": "workbench onboarding privacy card, out/vs/workbench/workbench.desktop.main.js:19619 @byte37309209",
+   "actual": "nls.messages.json @554507 documents the debugging-upload path including chat/prompt data 'even in privacy mode'; the OOM zip packs the whole User dir (chat DBs, transcripts) to S3; Prompt Quality upload exists — 'never stored' is falsified by shipping code paths.",
+   "verdict": "contradicted"
+  },
+  {
+   "claim": "We do not use Inputs or Suggestions to train our models, or permit third parties to use them for training, unless: (1) they are flagged for security review ..., (2) you explicitly report them to us ..., or (3) you’ve explicitly agreed to their use for such training purposes.",
+   "source": "evidence/cursor/disclosure/privacy.txt:101 (last updated Oct 6 2025)",
+   "actual": "'Explicitly agreed' = one click on the 'Recommended' onboarding card; the client then silently escalates to USAGE_CODEBASE_TRAINING_ALLOWED after >864e5 ms (24h) with no re-prompt (workbench:19516).",
+   "verdict": "understated"
+  },
+  {
+   "claim": "If you choose to turn off “Privacy Mode”: we may use and store codebase data, prompts, editor actions, code snippets, and other code data and actions to improve our AI features and train our models.",
+   "source": "evidence/cursor/disclosure/doc-data-use.txt:14 (fetched Sept 3 2026)",
+   "actual": "Accurately describes the enum-3/4 state that gates codebase_telemetry_v2, git history and agent-dot-dirs lanes — one of the few candid lines in current docs.",
+   "verdict": "honest"
+  },
+  {
+   "claim": "If you enable “Privacy Mode” in Cursor’s settings: Customer Data will not be used for training by Cursor. Cursor maintains zero data retention (ZDR) agreements with all providers, and AI model providers will not store or train on your data.",
+   "source": "evidence/cursor/disclosure/doc-data-use.txt:11",
+   "actual": "ZDR binds model providers only; Cursor's own FileSync/indexing/debugging uploads continue, and legacy 'no storage' mode is re-inferred away 24h after onboarding — the provider-side guarantee is presented as if it covered Cursor itself.",
+   "verdict": "understated"
+  },
+  {
+   "claim": "There are two ways data leaves your local environment when using Cursor: 1. LLM requests … 2. Cloud Agents. Cloud Agents are the only feature that requires Cursor to store code.",
+   "source": "evidence/cursor/disclosure/doc-privacy-and-data-governance.md:8-20",
+   "actual": "Binary shows ≥6 more egress lanes: FastUpdateFileV2 plaintext indexing, FileSync keystroke bodies, CodebaseSnapshotService packfiles, S3 debugging zips, IngestConversation analytics, ReportAgentSnapshot diffs — none require Cloud Agents.",
+   "verdict": "contradicted"
+  },
+  {
+   "claim": "For example, we send AI requests when you ask questions in chat, we send AI requests on every keystroke so that Cursor Tab can make suggestions for you, and we may also send AI requests in the background for building up context or looking for bugs to show you.",
+   "source": "evidence/cursor/disclosure/wayback-security-20260101160725.txt:112 (Oct 20 2025 snapshot)",
+   "actual": "Matches StreamCpp/FSSyncFile per-keystroke behavior in the binary; this candor was later deleted — the live security page no longer discloses keystroke upload.",
+   "verdict": "honest"
+  },
+  {
+   "claim": "To allow filtering vector search results by file path, we store with every vector an obfuscated relative file path … This means that for privacy mode users, no plaintext code is stored on our servers or in Turbopuffer.",
+   "source": "evidence/cursor/disclosure/wayback-security-20260101160725.txt:124-126",
+   "actual": "FastUpdateFileV2 ships unencryptedRelativeWorkspacePath and plaintext contents:o in the same message as the 'encrypted' path — plaintext path+body are transmitted regardless of what the server retains.",
+   "verdict": "contradicted"
+  },
+  {
+   "claim": "Is my source code stored on Cursor servers? No. Cursor creates embeddings without storing filenames or source code. Filenames are obfuscated and code chunks are encrypted.",
+   "source": "evidence/cursor/disclosure/wayback-codebase-indexing.txt FAQ (Nov 2025 snapshot)",
+   "actual": "The client sends both obfuscated and cleartext filename plus raw file text to repo42.cursor.sh; 'filenames are obfuscated' omits the parallel plaintext field in the wire schema.",
+   "verdict": "contradicted"
+  },
+  {
+   "claim": "File paths are encrypted before being sent to our servers, ensuring your project structure remains confidential. Your actual code content is never stored in plaintext on our servers. Code is only held in memory during the indexing process, then discarded, so there's no permanent storage of your source code.",
+   "source": "evidence/cursor/disclosure/wayback-codebase-indexing.txt:59",
+   "actual": "LocalFile schema field 3 is literally named unencrypted_relative_workspace_path and contents travels as decoded UTF-8 — 'encrypted before being sent' describes only one of the two path fields transmitted.",
+   "verdict": "contradicted"
+  },
+  {
+   "claim": "When codebase indexing is enabled in a Git repo, we also index the Git history. Specifically, we store commit SHAs, parent information and obfuscated file names … Commit messages and file contents or diffs are not indexed.",
+   "source": "evidence/cursor/disclosure/wayback-security-20260101160725.txt:140",
+   "actual": "3.21.16's GitHistoryUploader ships real ~1-month repo history as packfiles via the native .node module under codebase_telemetry_v2_git_history (client default on) — packfiles carry commit messages, trees and blobs, not just SHAs.",
+   "verdict": "contradicted"
+  },
+  {
+   "claim": "When enabled, we will not train on your data.",
+   "source": "evidence/cursor/disclosure/security.txt:75 (live page, Aug 25 2026)",
+   "actual": "The Oct-2025 version's detail (keystroke disclosure, obfuscated-path storage, x-ghost-mode replica architecture) was removed; the current page discloses nothing about collection, caching or retention.",
+   "verdict": "understated"
+  },
+  {
+   "claim": "api2.cursor.sh: Used for most API requests. / api3.cursor.sh: Used for Cursor Tab requests (HTTP/2 only). / repo42.cursor.sh: Used for codebase search (HTTP/2 only).",
+   "source": "evidence/cursor/disclosure/doc-docs_enterprise_network-configuration.txt:93-96",
+   "actual": "api3 also receives MetricsService/ReportIncrement posts bearing a hardcoded compile-time shared Bearer token; the cursor-user-debugging-data S3 bucket is absent from the firewall allowlist entirely.",
+   "verdict": "understated"
+  },
+  {
+   "claim": "On privacy mode, we do not store your data on our servers.",
+   "source": "evidence/cursor/disclosure/forum-2708.json (co-founder arvid220u, 2024-02-02)",
+   "actual": "Even in the same reply he admits getHighLevelFolderDescription sends 'a few of your files' server-side for summarization; today keystroke file bodies and plaintext indexing payloads still leave the client under privacy mode — 'do not store' is unverifiable and narrower than users read it.",
+   "verdict": "understated"
+  },
+  {
+   "claim": "Zero data retention - none of your code is stored or trained on by Cursor or third parties … Only encrypted embeddings and metadata are stored (not your actual code)",
+   "source": "evidence/cursor/disclosure/forum-52875.json (staff danperks, 2025-02-26)",
+   "actual": "The wire format transmits cleartext code+path for indexing; debugging zips and prompt-quality uploads store actual prompts/code — 'none of your code is stored' is refuted by client behavior.",
+   "verdict": "contradicted"
+  },
+  {
+   "claim": "It suggests code as you type, based on your recent edits, surrounding code, and linter errors.",
+   "source": "evidence/cursor/disclosure/doc-help_ai-features_tab.txt:4 (live, fetched 2026-09-25)",
+   "actual": "The vendor's own KLc map says 'Every keystroke ships the file body, filename and edit history to Cursor's Tab model' — the help page never mentions the upload.",
+   "verdict": "understated"
+  },
+  {
+   "claim": "Automatically index repositories to speed up Grep searches. All data is stored locally.",
+   "source": "workbench settings UI, out/vs/workbench/workbench.desktop.main.js:19492 @byte35374580",
+   "actual": "The same codebase indexing uploads plaintext contents+paths to repo42.cursor.sh via FastUpdateFileV2 — 'All data is stored locally' is false UI copy inside the product.",
+   "verdict": "contradicted"
+  },
+  {
+   "claim": " After one day of use, Cursor stores and learns from your prompts, codebase, edit history, and other usage data to improve the product.",
+   "source": "onboarding fallback copy, out/vs/workbench/workbench.desktop.main.js:19619 @byte37303443",
+   "actual": "Accurate description of the enum-4 state — the only candid sentence in onboarding, rendered as small fallback text beneath a cyan 'Recommended' badge steering users to the share card.",
+   "verdict": "honest"
+  },
+  {
+   "claim": "Upload this local agent run to Prompt Quality? This uploads prompts, code and context, tool arguments and results, and model responses. Prompt Quality stores this data for internal debugging.",
+   "source": "out/nls.messages.json:1 @byte597028",
+   "actual": "Matches agent.v1.AgentService/UploadLocalAgentRunToPromptQuality — the single per-action consent dialog found in the product; honest precisely because it is the exception.",
+   "verdict": "honest"
+  },
+  {
+   "claim": "(no vendor statement exists for the CodebaseSnapshotService packfile lane)",
+   "source": "searched privacy.txt, doc-*.md/txt, wayback snapshots, forum posts — zero mentions of shadow-git snapshot/packfile upload",
+   "actual": "RegisterCodebase→CreatePackfileUpload→UploadPackfileChunk(≤64MiB)→CompletePackfileUpload→RegisterCodebaseSnapshot ships whole-workspace git packfiles to api2.cursor.sh gated only by server flag + enum 4.",
+   "verdict": "absent"
+  },
+  {
+   "claim": "(no vendor statement exists for harvesting ~/.claude, ~/.codex, ~/.agents)",
+   "source": "no doc/page/forum mention of reading competitor agent directories",
+   "actual": "Xce() allowlists pull Claude Code projects/+history.jsonl, Codex sessions/+history.jsonl and ~/.agents/skills into the tracked-codebase set under codebase_telemetry_v2_agent_dot_dirs (client default TRUE).",
+   "verdict": "absent"
+  },
+  {
+   "claim": "(no vendor statement exists for OOM-triggered debugging zip to S3)",
+   "source": "cursor-user-debugging-data bucket absent from enterprise network-configuration host list; no doc mention",
+   "actual": "Renderer OOM auto-captures heap snapshot + full User dir + logs + transcripts and PUTs to presigned S3 without any dialog; legacy-privacy mode short-circuits to a JS-stack event only.",
+   "verdict": "absent"
+  },
+  {
+   "claim": "(no vendor statement exists for IngestConversation full-conversation analytics)",
+   "source": "no doc mention of AnalyticsService/IngestConversation",
+   "actual": "KLc map inside the binary describes it as 'Uploads the full conversation for analytics' — the upload exists in code but in no public text.",
+   "verdict": "absent"
+  },
+  {
+   "claim": "(no vendor statement exists for the shared hardcoded metrics token)",
+   "source": "no doc mention of MetricsService/ReportIncrement credentials",
+   "actual": "out/main.js:200 posts to https://api3.cursor.sh/aiserver.v1.MetricsService/ReportIncrement with Authorization:`Bearer ${jpe}` — a compile-time token identical for all installs; privacyMode only toggles an x-ghost-mode header, never blocks.",
+   "verdict": "absent"
+  }
+ ],
+ "timeline": [
+  {
+   "version": "Cursor 0.36.0",
+   "state": "absent",
+   "note": "Earliest probed build: cursor-retrieval ext + legacy StartUploadRepo/UploadFile indexing only; no packfile lane, no debug-zip lane"
+  },
+  {
+   "version": "Cursor 0.44.9",
+   "state": "absent",
+   "note": "Both Lane A (packfile) and Lane B (debug zip) still absent"
+  },
+  {
+   "version": "Cursor 1.0.1",
+   "state": "present",
+   "date": "2025-07-02",
+   "note": "Lane B first present: captureAndSendDebuggingData zip→uploadUrl + OOM auto-trigger already wired"
+  },
+  {
+   "version": "Cursor 2.4.37",
+   "state": "present",
+   "date": "2026-02-14",
+   "note": "Last Lane-A-absent build in semver order; debug-zip lane present"
+  },
+  {
+   "version": "Cursor 2.5.17",
+   "state": "dormant",
+   "date": "2026-02-17",
+   "note": "CodebaseSnapshotService/CreatePackfileUpload proto descriptor ships in 3 workbench bundles with zero callers; native .node already contains SnapshotClient/gix-snapshot"
+  },
+  {
+   "version": "Cursor 2.5.26",
+   "state": "dormant",
+   "date": "2026-02-26",
+   "note": "Last schema-only unwired build"
+  },
+  {
+   "version": "Cursor 2.6.11",
+   "state": "present",
+   "date": "2026-03-03",
+   "note": "Lane A wired: CodebaseTelemetryLifecycle gate (codebase_telemetry_v2 flag + privacyEnum==4), createPackfileUpload/uploadPackfileChunk/completePackfileUpload/registerCodebaseSnapshot, ~/.cursor/snapshots"
+  },
+  {
+   "version": "Cursor 3.21.16",
+   "state": "default-on",
+   "date": "2026-09-19",
+   "note": "Sub-flags git_history/agent_dot_dirs added with client default TRUE; CheckCodebaseTelemetryPolicy fails open, enforcement flag default FALSE (advisory would_block); GitHistoryUploader (~1mo real history); identity-aware sessions; oom_crash_watcher remote-gated default off"
+  },
+  {
+   "version": "ZCode 2.2.0",
+   "state": "absent",
+   "date": "2026-05-14",
+   "note": "All snapshot indicators 0 hits — feature does not exist"
+  },
+  {
+   "version": "ZCode 2.3.0",
+   "state": "present",
+   "date": "2026-05-16",
+   "note": "Debut: captureBeforePrompt→tar.gz→AES-256-CTR→RSA-wrap→Alibaba OSS via GET /api/v1/snapshot/upload-credential; real opt-in toggle default OFF; .git excluded; submodule workspaces die on EISDIR"
+  },
+  {
+   "version": "ZCode 2.6.0",
+   "state": "default-on",
+   "date": "2026-05-20",
+   "note": "isRepoSnapshotIndexingEffectivelyEnabled flips effective default ON; UI still displays raw flag — placebo opt-out era begins"
+  },
+  {
+   "version": "ZCode 3.1.0",
+   "state": "default-on",
+   "date": "2026-06-15",
+   "note": "3.x rewrite removes the toggle from the capture path entirely — server-issued credential becomes the only gate; .git whole-tree packed; attribution+incremental baseSnapshotId added"
+  },
+  {
+   "version": "ZCode 3.14.0",
+   "state": "removed",
+   "date": "2026-09-19",
+   "note": "Entire feature deleted (28 indicators→0): capture/credential/tar/AES/RSA/OSS/pending/GC all gone; upload-credential endpoint disappears with no successor; only hygiene literals remain"
+  }
+ ],
+ "gate_evolution": "Cursor's consent model is a single onboarding decision engineered to decay. The 'Recommended' share card ('I am fine with Cursor learning from my code!') seeds eligibleForSnippetLearning; hasEnoughTimeElapsedSinceOnboarding (>864e5 ms, i.e. 24h) then lets the client self-write enoughTimeElapsedSinceOnboarding, after which inferPrivacyModeFromLegacyValues silently returns enum 4 USAGE_CODEBASE_TRAINING_ALLOWED — no re-prompt, while the alternative card still promises 'none of your questions or code will ever be stored'. When the snapshot lane first wired in 2.6.11 its only gate was the server flag codebase_telemetry_v2 plus privacyEnum==4. By 3.21.16 it grew sub-flags (git_history, agent_dot_dirs) whose client defaults are all TRUE — the server can only ever tighten, never loosen, what the client already permits — plus CheckCodebaseTelemetryPolicy, which fails open on error and yields advisory 'would_block' unless codebase_protection_client_enforcement (client default FALSE) is on; a GitHistoryUploader streaming ~1 month of real repo history via the native .node and an identity-aware session controller arrived in the same build. Lane B (debugging zip) has existed since 1.0.1 with zero dialog — only legacy privacy mode short-circuits it — and is merely remote-throttled by oom_crash_watcher (default off) in 3.21.16. FileSync keystroke upload gates on private-inference setting + paid membership + server flag, conspicuously never on getPrivacyMode() though a sibling function 1.4KB away checks it. ZCode ran the same arc to completion: v2.3.0 shipped a real opt-in toggle default-off → v2.6.0 flipped the effective default on while the UI still showed the raw flag (placebo opt-out) → v3.1.0 deleted the toggle from the capture path entirely, leaving the server-issued OSS credential as the sole gate → v3.14.0 removed the feature altogether. Cursor today sits mid-arc at 'default-on with advisory gates'; ZCode shows where the trajectory ends — first the consent UI becomes decorative, then the feature itself is treated as a liability and deleted."
+}

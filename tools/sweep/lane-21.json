@@ -1,0 +1,14 @@
+{
+ "ok": true,
+ "corrections": [
+  "secondary_channels autocomplete lane: endpoint corrected from management.{region}.kiro.dev to runtime.{region}.kiro.dev — GenerateCompletions is sent via CodeWhispererRuntime configured by kiroAgent.configuration.getKrsConfig → Has=vWr(AMd) where AMd is the runtime.*.kiro.dev table; management.*.kiro.dev is the separate CPS service (getCpsConfig→yMd). Verified at extension.js getCodeWhispererClientConfig/initializeRuntimeClient.",
+  "timeline 1.0.138 date: '2026-07-13' → '~2026-07-15' — scratch/sizes.txt Last-Modified header is 'Wed, 15 Jul 2026 22:04:56 GMT'; no changelog page exists for 1.0.138, so Last-Modified is the only evidence.",
+  "timeline 0.12.301 date: '~2026-06-05' → '~2026-06-06' — Last-Modified 'Sat, 06 Jun 2026 00:33:54 GMT'.",
+  "secondary_channels Copilot telemetry guard: '≥100files' → '>100files' — code is `T.length>L$` with L$=100 (strictly greater; 101+ files triggers 'tooManyChanges') in agentHostMain.js:655.",
+  "secondary_channels infra-safety: 'conversationContext≤128KB' → 'conversationContext≤128e3字符(~128KB)' — cap is oFr=128e3 applied via s.slice(-oFr) on the serialized context string (chars, not bytes).",
+  "secondary_channels auth lane: '/oauth/token|refreshToken|logout|account' → '/oauth/token·/refreshToken·/logout·/account' — actual paths are endpoint-prefixed `${endpoint}/refreshToken`, `/logout`, `/account` (not all under /oauth/).",
+  "secondary_channels session-resume tail anchor: export zip ':16720-24' → ':16722-24' — addFile() calls at :16722, writeFile+'Exported session' log at :16724; lines 16720/16721/16723 unrelated.",
+  "Minor stage-2 wording kept: 'y==null 的 parse 失败行' normalized to 'parse 失败行' (parseLine returns falsy on bad JSON; byteOffset still commits — verified in flush loop)."
+ ],
+ "pack_written": true
+}

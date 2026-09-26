@@ -1,0 +1,21 @@
+{
+ "ok": true,
+ "corrections": [
+  "SENSITIVE_FIELD_KEYS count corrected 15→14 in stage 4 detail, stage 6 detail, disclosure §1.7.2 actual, and diagram_nodes (payload.js:6-21 Set literally has 14 entries; exhibit 3 why already said 14 — now consistent)",
+  "Exhibit 4 anchor: chunk 87074 byte 98890→98887 — the quoted 'e({dataContributionEnabled…' begins at 98887; 98890 landed mid-token",
+  "canReport() line range reporter.js:52-53→52-54 in exhibit 1 why (method spans 52-54; stage 2 gate already correct)",
+  "v2 beginTurn range eval-reporter.js:20-38→20-39 in stage 2 detail + code_anchor (closing brace at :39)",
+  "Stage 1 gate: replaced false claim '全仓 grep evalCapture 仅 4 处内部引用' with verified count — dist/main 5 files/12 hits + @mavis host-factory.js:46-47 consumer; out/ renderer zero refs (re-grepped)",
+  "Stage 5: fixed runtime-event flush semantics — delivery!=='batched'→flushImmediately and non-origin events without active turnId are dropped (reporter.js:302-311); tightened anchors (:50-54→:49-53 urgent window, :46-47→:46 localOnly gate); added reporter.js:302-311 to code_anchor",
+  "Stage 7 detail: completed truncated tail '唯一' → '唯一加密通道是 error-report（key=HKDF(accessToken) 厂商可解）'",
+  "payload_example: trajectory_id 'local-pi-sess_01JZX8ABCD-<digest>' → 'sess_01JZX8ABCD' in all 3 spots — buildLocalTrajectoryId returns legal sessionIds verbatim; local-pi- form only for illegal/>128B ids (note added)",
+  "payload_example sandbox event: filesystem_mode 'deny_writes_outside_workspace'→'workspace' (real enum workspace/read_only/full_access) and added configured_filesystem_mode field (local-sandbox-service.js:101-106)",
+  "secondary connector path: app-root/resources/mcode-tools/cli.mjs→app-root/resources/resources/mcode-tools/cli.mjs (nested resources dir; original path does not exist); anchor 23188→23189 (CALL_CONNECTOR_TOOL_PATH at :23189)",
+  "secondary workspace-indexing anchor indexing.js:34-52→8-53 (forced=internalBuild||test at :13-24, put() ignore at :22-28)",
+  "secondary session-handoff: {preflight,prepare,resolve}→{preflight,prepare,<id>/resolve} (resolve is POST /session-dispatch/<id>/resolve, cloud-client.js:220) + explicit sync path /session/<id>/result/<id>/sync",
+  "disclosure eval-capture source: 'evalCapture 仅现于 dist/main/modules/local-runtime/utility/' → '{index.js,utility/*} 与 @mavis host-factory 装配层' (index.js:1086-1098,1135 sits outside utility/)",
+  "disclosure website_deploy actual: '客户端无硬门' → 无 deploy 专用确认硬门——通用 local permission ask gate 仍拦该工具（local-website-deploy.js:15 注释自承），仅缺 body.confirm===true 式业务硬校验",
+  "Anchor refinements throughout: stage 1 added control.js:201-210 validator def; stage 9 response check transport.js:18-42→31-42; secondary channels given precise sub-anchors (remote-client.js:9-13, matrix-api-client.js:27,53-65, metrics-proxy.js:2,16,58-64, api.js:51/api-v2.js:11, oss/index.js:56, files/api.js:35, asr-proxy-http.js:6-7, cloud-client.js:3,86,162,220, outbox.js:306, command-router.js:247,462-464, crypto.js:9-18, matrix-media-client.js:7-8, local-website-deploy.js:15,100-107, electron-diagnostics-provider.js:118, extra-log-source.js:119-121, file/index.js:56-67); top-level 'name' field dropped to match required {target,mech,evi} shape"
+ ],
+ "pack_written": true
+}

@@ -1,0 +1,162 @@
+{
+ "stages": [
+  {
+   "stage": "cursor-A1 gate/arming（会话级闸门，决定整条管线是否存在）",
+   "detail": "workbench 侧 CodebaseTelemetry contrib（类 m9o）的 shouldTriggerSnapshots() 要求 experimentService.checkFeatureGate(\"codebase_telemetry_v2\") 且 authService.granularPrivacyModeRawEnum()===USAGE_CODEBASE_TRAINING_ALLOWED(=4)；ext-host 侧会话状态机在 !Pde(privacyMode) 时保持 inactive（Pde(e)=e===Fde=4）。子 flag：codebase_telemetry_v2_git_history / codebase_telemetry_v2_agent_dot_dirs / codebase_protection_client_enforcement（默认全 false，由 qce.reconcile 经 featureGates.check 逐个评估后 reconcileFeatureGates 下发）。enum4 的来源：onboarding Recommended 分享卡 + hasEnoughTimeElapsedSinceOnboarding(>864e5ms) 24h 后静默推断升级。",
+   "code_anchor": "evidence/cursor/cursor-beautified/retrieval/deobfuscated.js:132804 (Pde gate); :127101-127103 (Pde/Fde=4); :133228-133239 (Ece flag 名+默认); :134009-134018 (checkMainGate); :134319-134349 (子 flag reconcile); extracted workbench.desktop.main.js byte ~29609900 (shouldTriggerSnapshots)",
+   "endpoint": "无独立端点；featureGate/privacy 经既有 gates RPC 下发（api2.cursor.sh）",
+   "gate": "服务端 flag codebase_telemetry_v2 + privacy enum==4（USAGE_CODEBASE_TRAINING_ALLOWED，可经 onboarding 24h 静默升级获得）+ 非 localMode/非 glass rootWorkspace",
+   "wire": "本地状态机翻转，无字节离机；但 gate 评估依赖服务端 flag 下发"
+  },
+  {
+   "stage": "cursor-A2 trigger（按 agent 请求触发影子提交 + 持续文件监听）",
+   "detail": "m9o 挂 composerEventService.onDidSendRequest→onRequestStart(generationUUID)、onDidFinishStreamChat→onStreamFinish；分别发 executeCommand(\"cursor.codebaseTelemetry.triggerSnapshot\",{reason:{type:\"AGENT_REQUEST_START\"|\"AGENT_REQUEST_END\",requestId}})；requestSnapshots Map 去重上限 wx_=100，失败计数指数退避日志。ext 侧注册该 command（deobf 138352-138358，minified byte 2510622）调 session.snapshot(reason)。另一条触发面：file watcher recordChanges→pendingChanges 250ms debounce flush（MAX_PENDING_CHANGES=50000、FLUSH_THRESHOLD/BATCH=5000）。",
+   "code_anchor": "workbench.desktop.main.js byte ~29607900-29610200（Sx_、wx_=100、m9o 全链）；deobfuscated.js:138352-138358（command 注册）; :135723-135728（flush 常量）",
+   "endpoint": "—（进程内 command，无网络）",
+   "gate": "同 A1：checkFeatureGate(codebase_telemetry_v2)+enum4，逐次调用前 evaluate",
+   "wire": "仅本地 command payload {reason:{type,requestId}}；文件增删改进 pendingChanges"
+  },
+  {
+   "stage": "cursor-A3 collect（Rust gix-snapshot 影子 git 仓持续吞工作区+agent dot-dirs）",
+   "detail": "native CodebaseSnapshotClient（file_service.linux-x64-gnu.node，gix-snapshot crate）在 snapshotsBaseDir=dirname^3(globalStorageUri.fsPath)+\"/snapshots\"（≈~/.config/Cursor/User/snapshots）为每个 codebase 维护影子仓，ref 命名空间 refs/cursor/snapshots/（native 字符串）。trackedCodebases=workspace folders（排除 home 目录）+ agent dot-dirs：~/.cursor（denylist，免 gate）、~/.claude 或 $CLAUDE_CONFIG_DIR（allowlist 14 项：agent-memory/ agents/ CLAUDE.md commands/ history.jsonl output-styles/ plans/ plugins/cache/ plugins/installed_plugins.json plugins/known_marketplaces.json projects/ rules/ skills/）、~/.codex 或 $CODEX_HOME（allowlist 15 项）、~/.agents（skills/）。snapshot() 对每个 codebase 调 snapshotClient.commit(e,\"cursor-snapshot\\n\\n\"+JSON.stringify({v:1,reason})) 写影子 commit。",
+   "code_anchor": "deobfuscated.js:134509-134544 (Xce() dot-dir 规格); :138274-138294 (GAe desiredCodebases+agentDotDirs 门); :138309-138314 (YAe snapshotsBaseDir); :135633-135661 (commit+cursor-snapshot msg); :136981-136994 (native client 构造); .node 字符串 refs/cursor/snapshots/",
+   "endpoint": "—（本地影子仓写盘）",
+   "gate": "agent dot-dirs 中 requiresGate 项受子 flag codebase_telemetry_v2_agent_dot_dirs 门控（GAe.get(featureGates) 内 filter e=>n||!e.requiresGate）；workspace 本体无额外子 flag",
+   "wire": "无字节离机；落盘=影子 git objects（工作区+dot-dir 文件 blob）"
+  },
+  {
+   "stage": "cursor-A4 pack（300s 批产生成真实 git packfile 落盘）",
+   "detail": "SnapshotUploader（类 Zpe）periodicRunner intervalMs=zpe=300000、initialDelayMs=30000，runOnce→processAllCodebases→processCodebase：shouldAdmit(preflight)→snapshotManager.generatePackfile(codebaseUuid)（native 产 packfile 于磁盘，含所有未注册影子 commit——blob=文件内容）→commits.length===0 则跳过→shouldAdmit(final)→ensureCodebaseRegistered→uploadPackfile→markRegistered→finally cleanupPackfile 删盘。packfile 只在本次批传窗口存在。",
+   "code_anchor": "deobfuscated.js:136588-136633 (Zpe 300s 调度); :136670-136773 (processCodebase 全链); :135685-135702 (generatePackfile)",
+   "endpoint": "—",
+   "gate": "shouldAdmit preflight+final 双闸（见 A5）；backoff 状态机（Xpe 初始 10s×2 至 300s；Ppe failure 30s→1.8e6s、idle 30s→9e5s、slowNetwork 9e5s→5.4e6s）",
+   "wire": "无字节离机；packfile 字节写本地临时文件"
+  },
+  {
+   "stage": "cursor-A5 credential/admission（repo 级 policy + codebase 注册，均 fail-open 或预上传）",
+   "detail": "(a) CheckCodebaseTelemetryPolicy：OAe.checkCodebaseTelemetryPolicy(path) 找包含该 path 的 git repo→解析其全部 remote fetch/push URL 为 CodebaseRepositoryIdentity{host,repository_path}→POST 得 {telemetry_allowed:bool}；policyCache 5min/负缓存 15s；npe.shouldAdmit：RPC 抛错→check_failed=allow（fail-open），telemetry_allowed=false 仅在 codebase_protection_client_enforcement 服务端开启时才真拦（默认关→would_block=allow）。(b) ensureCodebaseRegistered→RegisterCodebase{codebase_uuid,path:<本地绝对路径>,kind,environment}，30s 超时；alreadyExists→复用。",
+   "code_anchor": "deobfuscated.js:137325-137373 (identity/policy proto+service); :137391-137399 (RPC 封装 30s); :137692-137758 (policy 缓存+remote 枚举); :134683-134712 (shouldAdmit fail-open); :135240-135272 (registerCodebase)",
+   "endpoint": "POST https://api2.cursor.sh/aiserver.v1.CodebaseProtectionService/CheckCodebaseTelemetryPolicy ; POST https://api2.cursor.sh/aiserver.v1.CodebaseSnapshotService/RegisterCodebase",
+   "gate": "服务端 flag codebase_protection_reporting（心跳）、codebase_protection_client_enforcement（真拦开关，默认 advisory）；无 privacy 额外检查（enum4 已在会话层保证）",
+   "wire": "出：repo remote host+path 明文（如 github.com/acme/secret-repo）+ 工作区绝对路径+kind；入：telemetry_allowed / 空 200"
+  },
+  {
+   "stage": "cursor-A6 upload（服务端签发 upload_uuid+chunk_size → 分块直传 packfile）",
+   "detail": "jpe.uploadPackfile：CreatePackfileUpload{codebase_uuid,packfile:{pack_id,content_sha256,size_bytes}}→响应 oneof{upload_required{upload_uuid,method.direct_chunked_upload{chunk_size_bytes}}|already_uploaded}；uploadViaChunksFromDisk 按服务端 chunk_size（客户端硬顶 Kpe=67108864=64MiB）从盘逐块读→UploadPackfileChunk{codebase_uuid,upload_uuid,chunk_index:u32,data:bytes}（每块 timeout Qpe=600000）→CompletePackfileUpload{codebase_uuid,upload_uuid,completion.direct_chunked_upload{}}。传输：Connect-RPC HTTP/1.1、useBinaryFormat、sendCompression gzip、defaultTimeoutMs 60000、Authorization:Bearer<userToken>、DLe 全量指纹头（x-cursor-checksum/x-ghost-mode/x-session-id/x-cursor-client-*…）+backupRequestId=randomUUID。",
+   "code_anchor": "deobfuscated.js:135274-135309 (createPackfileUpload); :135311-135346 (uploadPackfileChunk RPC); :135347-135379 (completePackfileUpload); :136292-136386 (uploadPackfile); :136387-136473 (分块读盘循环); :136475-136525 (completeUpload); :135173-135210 (transport); :135231 (Qpe=600000); :136287 (Kpe=64MiB); proto :134954-135114；DLe 头 extensionHostProcess.js byte ~1520820",
+   "endpoint": "POST https://api2.cursor.sh/aiserver.v1.CodebaseSnapshotService/{CreatePackfileUpload,UploadPackfileChunk,CompletePackfileUpload}",
+   "gate": "Bearer 用户 token；失败分类 alreadyUploaded/permissionDenied/rateLimited(读 retryafterms)/conflict/failedPrecondition→不同 backoff；chunk_size 由服务端定",
+   "wire": "出：pack_id+sha256+size 元数据，随后 packfile 原始字节流（git blob=工作区+dot-dir 文件明文内容，proto 编码+gzip）；入：upload_uuid+chunk_size_bytes+2xx"
+  },
+  {
+   "stage": "cursor-A7 register/callback（注册在上传前完成；收尾只动本地指针+删包）",
+   "detail": "上传成功后 snapshotManager.markRegistered(codebaseUuid,tipCommit)→native snapshotClient.markRegistered 推进本地 shadow-repo 已注册指针（native 侧 UPDATE h_commit），随后 finally cleanupPackfile 删临时 packfile。RegisterCodebaseSnapshot{codebase_uuid,commit_hash,tree_hash,reason} 与 GetCodebaseSnapshotStatus 在 JS service descriptor 中存在但 JS 层无调用点、native 二进制也只内嵌 Create/UploadChunk/Complete 三条 RPC path——本版服务端靠 codebase_uuid+packfile 内容自行对齐 commit，无客户端侧“注册回执”字节。",
+   "code_anchor": "deobfuscated.js:135668-135684 (markRegistered); :136754-136768 (调用+清理); :135710-135721 (cleanupPackfile); :134893-134953 (RegisterCodebaseSnapshot/Status proto 仅声明); .node 字符串仅 /UploadPackfileChunk /CreatePackfileUpload /CompletePackfileUpload",
+   "endpoint": "（声明存在）/aiserver.v1.CodebaseSnapshotService/{RegisterCodebaseSnapshot,GetCodebaseSnapshotStatus} ——本版未见实际调用",
+   "gate": "—",
+   "wire": "收尾无新增离机字节；markRegistered 仅本地 SQLite/指针写"
+  },
+  {
+   "stage": "cursor-A2' Lane A2 GitHistorySession（真实仓库近一月提交史，Rust 旁路同端点）",
+   "detail": "codebase admit 后 ensureSession 建 native GitHistorySession({snapshotsBaseDir,rpcBaseUrl=backendUrl,authToken,requestHeaders=DLe 头去掉 x-request-id 与 x-amzn-trace-id})；仅 GIT_MAIN_WORKTREE_ROOT（Ype 白名单）；首次 sweep +300s、其后按 codebase ≥300s 间隔、慢网/永久错误独立退避；codebase-snapshot-history crate 走真实 repo revwalk（window≈one month，native 字符串 \"Failed to calculate one month ago\"）产 packfile 后经 codebase-snapshot-rpc 内置 Connect client 直发同三个 packfile 端点，加 x-cursor-codebase-snapshot-rate-limit 头——JS 层完全不可见。",
+   "code_anchor": "deobfuscated.js:136184-136212 (ensureSession 构造); :136020-136034 (requestHeaders 裁剪); :136246-136263 (Ype 主 worktree 限定); :137116-137135 (reconcileGitHistory gate); :135896-135901 (首扫 300s); :136041-136079 (每 codebase 周期+shouldAdmit); .node 字符串 3 条 RPC path + x-cursor-codebase-snapshot-rate-limit",
+   "endpoint": "同 A6：api2.cursor.sh/aiserver.v1.CodebaseSnapshotService/{CreatePackfileUpload,UploadPackfileChunk,CompletePackfileUpload}",
+   "gate": "子 flag codebase_telemetry_v2_git_history + 主会话存活 + shouldAdmit(git_history/final)",
+   "wire": "出：真实 .git 近 1 个月 commit/tree/blob 的 packfile 分块流（Rust→api2，proto+gzip+Bearer+rate-limit 头）"
+  },
+  {
+   "stage": "zcode-Z1 trigger（prompt/命令/任务收尾/wiki/cron → captureBeforePrompt）",
+   "detail": "唯一引擎 RepoSnapshotSidecarService.captureBeforePrompt，host bootstrap 无条件实例化（v2.3.0:50694）。T1 sendSession→scheduleRepoSnapshotSidecar({prompt,sessionTraceId})（全 41 存活版）；T3 sendConversationCommandV4 reserve/activate intent 槽（v3.6.1+）；T4 captureTaskCompleteUpdate→content:\"repo-wiki-update\"、captureStage:\"terminal\"（error 相不捕获）；T5 wiki generate→\"repo-wiki-generation\"；T6 scheduler SQLite automations 20s tick→cron-dispatch→T1；T7 OffPeakRun 同 T6；v3.6.1+ intent 队列 32 深 120s 超时。fire-and-forget，v2.x 失败被 unhandled rejection 静默吞。",
+   "code_anchor": "v2.3.0:app/out/host/index.js:14990（runPrompt 内 void captureBeforePrompt callsite）; :50694（无条件实例化）; v3.12.3 同文件调度/触发符号见 notes §6（sendSession/sendConversationCommandV4/dispatchCronRun）",
+   "endpoint": "—（进程内）",
+   "gate": "v2.3.0–v2.5.0 repoSnapshotIndexingEnabled 真 opt-in（默认关）；v2.6.0–v2.13.0 isRepoSnapshotIndexingEffectivelyEnabled 默认取反（UI 显示 OFF 实际开）；v3.1.0+ 开关装饰化零消费——运行时前置仅：登录 token、workspaceIdentity 为空（remote 永不捕获）、服务端 credential 非 null",
+   "wire": "无字节离机；intent 入队"
+  },
+  {
+   "stage": "zcode-Z2 credential（捕获路径最前的 GET——打包三输入全来自响应）",
+   "detail": "captureBeforePromptUnsafe 顶部：tokenProvider()(zcodeJwtToken??accessToken)→workspaceKeyHash=sha256(workspaceIdentity‖workspacePath)[:12]→getUploadKey。GET https://zcode.z.ai/api/v1/snapshot/upload-credential?workspace_id=<hash12>（v2.3.0–v3.2.5 硬编码 :13762；v3.3.0+ env 可改 origin）；v3.1.0+ 带 X-* 指纹头（UA/Referer/X-Title/X-ZCode-App-Version/X-Platform/X-Client-Language/X-Client-Timezone/X-Os-*/X-Device-Mid?/x-request-id uuid）；v3.6.1+ 15s 超时+AbortSignal。响应 data{callback{url,body,content_type},oss{host,path,policy,x_oss_signature,x_oss_signature_version,x_oss_credential,x_oss_security_token,x_oss_date},encryption{public_key,key_version,algorithm},snapshot{snapshot_id,base_snapshot_id?},max_size?}——data:null 即服务端 kill switch 中止整个捕获。缓存两代：sha256(token)[:16]:wsHash 用后即删 → v3.6.1+ uploadCredentialHandle 内存 UUID 1h TTL（重启必 key_expired）。",
+   "code_anchor": "v2.3.0:app/out/host/index.js:13762（URL 常量）; 同文件 ~50265 repoSnapshotUploadClient.ts/~50214 diagnostics 模块 banner；v3.12.3 符号 qve/Wn/CXe/xXe（notes §5.2）",
+   "endpoint": "GET https://zcode.z.ai/api/v1/snapshot/upload-credential?workspace_id=<sha256[:12]>",
+   "gate": "登录 JWT；服务端 kill switch data:null；无 HTTP retry；非 2xx→ApiError 带 x-request-id/x-trace-id 诊断头",
+   "wire": "出：URL query workspace_id 48-bit 假名 + Bearer JWT + X-* 指纹（v3.1.0+）；入：snapshot_id（=tar 根名）、SPKI 公钥+key_version、OSS 表单签名组、callback 模板、base_snapshot_id?、max_size?"
+  },
+  {
+   "stage": "zcode-Z3 collect（git ls-files 主路 + 过滤链 + v3.1.0 起 .git 整树强打 + v3.11.1 extraManifest）",
+   "detail": "枚举 spawn(\"git\",[\"ls-files\",\"--cached\",\"--others\",\"--exclude-standard\",\"-z\"])（无 timeout/无 stdout 上限/env 未消毒），失败回落 walkFiles 递归 opendir。过滤判定序：symlink→unsupported；.git 段（v2.x 排除→v3.1.0 起紧随 symlink 检查返回 include:true 豁免全部后续规则，appendRootGitMetadataPaths/walkGitMetadataFiles 零剪枝打根 .git/**）；dep node_modules/cache .cache,.turbo/build（v3.2.0 起仅顶层 dist,build,out,.next,coverage,dist-*,*-unpacked）；secret 9 基名+.pem/.key/.p12/.pfx+token|secret 子串（漏 .netrc/.git-credentials/credentials.json/.aws/credentials/.ssh/config/kubeconfig/.docker/config.json/.pypirc/*.keystore）；>1MiB large-file；前 8192B 含 NUL→binary。v3.11.1+ extraManifest：global-configs 组（settings.behavior.json 17 键白名单/mcp.json/skills/commands/hooks(shell 命令串)/memory≤20MiB/subagents/plugins/instructions=~/.zcode/AGENTS.md；敏感键值→\"<redacted>\"）+references 组（prompt 附件 ≤16 文件/1GiB）。",
+   "code_anchor": "v2.3.0:app/out/host/index.js:~49910（ls-files spawn）; ~49800（REPO_SNAPSHOT_MAX_FILE_BYTES 等过滤集，逐字见 notes §3.2）; v3.12.3 符号 xct/zct（spawn）R5/F_e（filter）N_e/U_e（git metadata）D5/tle/I5/Xce（extraManifest）",
+   "endpoint": "—",
+   "gate": "无任何 consent 开关参与（v3.x）；isRepoSnapshotInternalPath 仅排除 <config>/checkpoints 子树",
+   "wire": "无字节离机；产出内存 manifest 候选列表"
+  },
+  {
+   "stage": "zcode-Z4 pack+encrypt（tar 根=snapshot_id → gzip → AES-256-CTR → RSA-OAEP wrap → pending 落盘）",
+   "detail": "meta/prompt.json{schema:repo_snapshot_prompt/v2,sessionId(taskId 剥 sess_),queryId?,requestId:uuidv4,messageId,provider:bigmodel|z.ai|others,model,url,failureCount?,captureStage?,historyRoundCount?,createdAt,manifestHash,content:<prompt 全文无上限>}；meta/manifest.json{schema,workspaceKey,createdAt,files[{path,sizeBytes}],stats{includedFileCount,includedBytes}}；meta/delta.json{baseManifestHash,nextManifestHash,addedOrModified,deleted}（判据仅 path+sizeBytes——等长改写不可见）；extra-meta/manifest.json(+delta) v3.11.1+。tar：根目录名=credential 下发 snapshot_id，ustar mode0644 uid/gid0 mtime=打包时刻，长名走 pax；gzip。加密：dataKey AES-256-CTR、16B nonce 前缀密文（无认证）、RSA-OAEP-SHA256 用服务端 public_key wrap；envelope{schema:repo_snapshot_encrypted_artifact/v2,contentAlgorithm,keyWrapAlgorithm,keyId,nonceEncoding:\"ciphertext-prefix-16-byte\",aadEncoding:\"canonical-json-v1\",aad:{…workspaceKeyHash,kind,manifestHash,compression:\"tar.gz\"},encryptedDataKey,plaintextSha256}（aad 仅声明性——CTR 无 AAD 槽）。pending 写 ~/.zcode/v2/checkpoints/<wsHash12>/pending/<groupId>{.enc,.envelope.json,manifest}；唯一 drain=下一次捕获尾部 flush（无 startup/周期 flush）。",
+   "code_anchor": "v2.3.0:app/out/host/index.js:49658（tar 根=snapshot_id）; :49978（manifest.json）; :49641（delta）; :49605（encryptArchive envelope）; :49735（canonicalJson/manifestHash）; schema 常量 v2.3.0:app/out/host/chunk-5KQASS3D.js:16656；v3.1.1 模板化 :app/out/host/chunk-TDZVVJU4.js",
+   "endpoint": "—",
+   "gate": "artifact 硬顶 max(0,uploadKey.maxSizeBytes−16)（v3.2.3+ RepoSnapshotArtifactMaxSizeExceededError→静默跳过）；v3.11.1+ 磁盘配额 resident+2×max≤3×max",
+   "wire": "无字节离机；落盘 .enc=nonce‖AES-CTR(tar.gz)+envelope.json"
+  },
+  {
+   "stage": "zcode-Z5 upload（OSS PostObject multipart 直传阿里云，bare 归因明文给 OSS）",
+   "detail": "flush 用 pending 内 uploadCredentialHandle 内存查表取回 credential（miss→key_expired 丢弃）；buildObjectUploadTarget：v3.2.1+ 先比 encryptedSizeBytes>data.max_size→payload_too_large；POST oss.host multipart：success_action_status=200、policy、x-oss-signature/-version/-credential/-date/-security-token、key=oss.path、bare 归因明文（v3.1.0+ sessionId/queryId/requestId；+failureCount v3.2.1；+captureStage/historyRoundCount v3.7.3——OSS 侧可见）、callback=base64 JSON；file=\"repo-snapshot.tar.gz.enc\"(application/octet-stream)。只查 response.ok（成功取 etag；失败读 4KB 预览→object_upload_failed）；fetch v3.12.2+ 改 undici redirect:\"error\"，不走 proxy-aware transport（与 credential GET 不对称）。uploadPutObject PUT 分支自 v2.3.0 存在但服务端恒发 POST——死代码。",
+   "code_anchor": "v2.3.0:app/out/host/index.js ~50265（repoSnapshotUploadClient）/~50501（UploadWorker）；逐字行为 notes §5.3；v3.12.3 符号 idt（uploadPostObject）",
+   "endpoint": "POST https://<credential.oss.host>（aliyuncs bucket，host/path 由 credential 下发）",
+   "gate": "credential 存活（handle/缓存命中）；max_size 上限；无用户可见失败面（v3.x runJob 吞异常 outcome=failed）",
+   "wire": "出→OSS：密文 blob + 明文 bare 归因 + base64 callback 描述；入：200+etag（callback 响应体从不解析）"
+  },
+  {
+   "stage": "zcode-Z6 register/callback（OSS 服务端回投 callbackUrl——唯一注册通道，客户端零参与）",
+   "detail": "encodeOssCallback=base64(JSON{callbackUrl:callback.url,callbackBody:<${k}占位符已替换>,callbackBodyType:callback.content_type})；replaceOssCallbackPlaceholders /\\$\\{([^}]+)\\}/g 替换+encodeURIComponent。占位符：update_type=full|incremental、checksum=sha256:<明文 tar.gz sha256>（非密文 hash——服务端解密前即可锚定/去重）、encrypted_aes_key=<RSA-wrap 后 dataKey b64>、x: 镜像三件套、x:base_snapshot_id(v2.13+)、sessionId/queryId/requestId+其 x: 镜像(v3.1+)、failureCount(v3.2.1+)、captureStage/historyRoundCount(v3.7.3+)。OSS 服务端把填充后 body POST 回 zcode callbackUrl 完成登记——服务端获 wrapped key+明文 sha256+全部归因即可解密。客户端从不读 OSS 响应体：base_not_found/base_invalid/hash_mismatch 三分支自 v2.3.0 死代码，服务端真拒收时客户端照常 markAcceptedManifest。",
+   "code_anchor": "notes §5.4 encodeOssCallback/replaceOssCallbackPlaceholders（v2.3.0–v3.12.3 形状不变）；死分支裁决 §4.4/§12",
+   "endpoint": "（OSS→server）POST credential.callback.url；客户端无独立注册调用",
+   "gate": "由 OSS 服务端按 callback 表单执行；客户端无感知",
+   "wire": "OSS→zcode：wrapped dataKey+明文 sha256+update_type+全归因；客户端侧：仅本地 markAcceptedManifest/state.json 推进"
+  }
+ ],
+ "payload_example": "```\n==================== 重构样本 —— Cursor Lane A（Connect-RPC application/proto 体，字段名逐字取自 proto 描述符） ====================\n# POST https://api2.cursor.sh/aiserver.v1.CodebaseProtectionService/CheckCodebaseTelemetryPolicy\n{\"identities\":[{\"host\":\"github.com\",\"repository_path\":\"acme/secret-repo\"}]}\n#   -> {\"telemetry_allowed\":true}   # RPC 抛错也放行（fail-open）\n\n# POST https://api2.cursor.sh/aiserver.v1.CodebaseSnapshotService/RegisterCodebase\n{\"codebase_uuid\":\"cb_7f3a…\",\"path\":\"/home/u/src/secret-repo\",\n \"kind\":\"CODEBASE_KIND_GIT_MAIN_WORKTREE_ROOT\",\"environment\":\"CODEBASE_ENVIRONMENT_USER_MACHINE\"}\n# （dot-dir 另发独立 codebase：path=\"/home/u/.claude\", kind=\"CODEBASE_KIND_DOT_CLAUDE\"）\n\n# POST .../CreatePackfileUpload\n{\"codebase_uuid\":\"cb_7f3a…\",\"packfile\":{\"pack_id\":\"9c1e…\",\"content_sha256\":\"<64hex>\",\"size_bytes\":\"48392105\"}}\n#   -> {\"upload_required\":{\"upload_uuid\":\"upl_…\",\"method\":{\"direct_chunked_upload\":{\"chunk_size_bytes\":\"8388608\"}}}}\n\n# POST .../UploadPackfileChunk   （按 chunk_size 重复，单块客户端硬顶 64MiB）\n{\"codebase_uuid\":\"cb_7f3a…\",\"upload_uuid\":\"upl_…\",\"chunk_index\":0,\n \"data\":\"<PACK\\\\x00\\\\x00\\\\x00\\\\x02 … raw git packfile：commit/tree/blob —— blob 即工作区文件明文 + ~/.claude/projects/*.jsonl 等>\"}\n# 包内影子 commit message（逐字格式）：cursor-snapshot\\n\\n{\"v\":1,\"reason\":{\"type\":\"AGENT_REQUEST_START\",\"requestId\":\"<generationUUID>\"}}\n\n# POST .../CompletePackfileUpload\n{\"codebase_uuid\":\"cb_7f3a…\",\"upload_uuid\":\"upl_…\",\"completion\":{\"direct_chunked_upload\":{}}}\n# 公共头（DLe）：Authorization: Bearer <JWT>, x-cursor-checksum, x-cursor-client-version:3.21.16,\n#   x-ghost-mode:false, x-session-id, x-client-key, x-request-id, x-amzn-trace-id:Root=<uuid>, backupRequestId —— proto+gzip, h1.1, 60s\n\n==================== 重构样本 —— ZCode（v3.12.3 存活形态；v3.14.0 已整体移除） ====================\n# 1) GET https://zcode.z.ai/api/v1/snapshot/upload-credential?workspace_id=<sha256(wsKey)[:12]>\n#    Authorization: Bearer <zcodeJwt>; v3.1.0+ X-ZCode-App-Version/X-Platform/X-Client-Timezone/x-request-id…\n# -> {\"code\":0,\"msg\":\"…\",\"data\":{\n#     \"callback\":{\"url\":\"https://zcode.z.ai/api/v1/snapshot/callback\",\"body\":\"update_type=${update_type}&checksum=${checksum}&encrypted_aes_key=${encrypted_aes_key}&x:base_snapshot_id=${x:base_snapshot_id}&sessionId=${sessionId}&x:sessionId=${x:sessionId}&queryId=${queryId}&requestId=${requestId}&failureCount=${failureCount}&captureStage=${captureStage}&historyRoundCount=${historyRoundCount}&x:update_type=${x:update_type}&x:checksum=${x:checksum}&x:encrypted_aes_key=${x:encrypted_aes_key}\",\"content_type\":\"application/x-www-form-urlencoded\"},\n#     \"oss\":{\"host\":\"https://<bucket>.oss-cn-*.aliyuncs.com\",\"path\":\"repo-snapshots/<…>.enc\",\"policy\":\"<b64>\",\"x_oss_signature\":\"…\",\"x_oss_signature_version\":\"OSS4-HMAC-SHA256\",\"x_oss_credential\":\"…\",\"x_oss_security_token\":\"…\",\"x_oss_date\":\"…\"},\n#     \"encryption\":{\"public_key\":\"-----BEGIN PUBLIC KEY-----\\\\n…\",\"key_version\":3,\"algorithm\":\"RSA-OAEP-256\"},\n#     \"snapshot\":{\"snapshot_id\":\"snap_018f…\",\"base_snapshot_id\":\"snap_018e…\"},\"max_size\":268435456}}\n\n# 2) POST https://<bucket>.oss-cn-*.aliyuncs.com   multipart/form-data（字段序=插入序，file 最后）\n#    success_action_status=200 | policy | x-oss-signature | x-oss-signature-version | x-oss-credential\n#    | x-oss-date | x-oss-security-token | key=<oss.path>\n#    | sessionId=<taskId 剥 sess_> queryId=<id> requestId=<uuid> failureCount=0 captureStage=prompt historyRoundCount=7   ← bare 明文，OSS 可见\n#    | callback=<base64 上 JSON（占位符已填充）>\n#    | file = nonce(16B)‖AES-256-CTR(repo-snapshot.tar.gz)  filename=\"repo-snapshot.tar.gz.enc\"\n# 密文内 tar 目录树（根目录名=snapshot_id）：\n#   <snapshot_id>/meta/prompt.json      {\"schema\":\"repo_snapshot_prompt/v2\",\"sessionId\":\"…\",\"queryId\":\"…\",\"requestId\":\"<uuid>\",\"messageId\":\"…\",\"provider\":\"bigmodel\",\"model\":\"glm-…\",\"url\":\"https://…\",\"failureCount\":0,\"captureStage\":\"prompt\",\"historyRoundCount\":7,\"createdAt\":…,\"manifestHash\":\"<sha256>\",\"content\":\"<本次 prompt 全文，无长度上限>\"}\n#   <snapshot_id>/meta/manifest.json    {\"schema\":\"repo_snapshot_manifest/v2\",\"workspaceKey\":\"<identity‖path>\",\"createdAt\":…,\"files\":[{\"path\":\"src/a.ts\",\"sizeBytes\":1234}],\"stats\":{\"includedFileCount\":N,\"includedBytes\":M}}\n#   <snapshot_id>/meta/delta.json       {\"schema\":\"repo_snapshot_delta/v2\",\"baseManifestHash\":\"…\",\"nextManifestHash\":\"…\",\"addedOrModified\":[{\"path\",\"sizeBytes\"}],\"deleted\":[\"…\"]}\n#   <snapshot_id>/extra-meta/manifest.json {\"schema\":\"repo_snapshot_extra_manifest/v1\",\"createdAt\":…,\"groups\":[{\"groupId\":\"global-configs\",\"changePolicy\":\"rare\",\"files\":[{\"path\":\"hooks.json\",\"sizeBytes\":…,\"contentHash\":\"…\",\"source\":\"app-memory:global-hooks\"}]},{\"groupId\":\"references\",\"files\":[…]}]}\n#   <snapshot_id>/files/<repo 相对路径>   每个 ≤1MiB；v3.1.0+ 含 .git/** 整树（config/reflog/pack 豁免全部过滤）\n#   <snapshot_id>/extra-files/global-configs/{settings.behavior.json,mcp.json,skills.json,commands.json,hooks.json,memory.json,subagents.json,plugins.json,instructions.json}   ← shell hook 命令串在内，敏感键值 \"<redacted>\"\n#   <snapshot_id>/extra-files/references/<prompt 附件>\n# 3) OSS→server 回调体（服务端模板，客户端只填值）：update_type=incremental&checksum=sha256:<明文tar.gz sha256>\n#    &encrypted_aes_key=<RSA-OAEP wrap 后 dataKey b64>&x:base_snapshot_id=snap_018e…&sessionId=…&x:sessionId=…\n#    &queryId=…&requestId=…&failureCount=0&captureStage=prompt&historyRoundCount=7（各项另有 x: 镜像）\n```",
+ "volume": {
+  "per_event": "Cursor-A：每次 agent 请求产 1 个影子 commit（仅元数据级小）；真正离机集中在 300s 批：RegisterCodebase ~0.3KB + CheckPolicy ~0.2KB + CreatePackfileUpload ~0.5KB + N×UploadPackfileChunk（服务端 chunk_size，≤64MiB/块）+ Complete ~0.3KB。增量 packfile=距上次注册指针间新 commit 的 blob（改动文件内容+dot-dir jsonl 追加）通常数十 KB–数 MB；首次 admit=整棵工作树+~/.claude|~/.codex|~/.agents allowlist 内容，10MB–1GB+。Lane A2 每周期一包：近 1 个月 git 史 packfile，MB–数十 MB。ZCode：credential GET 出 ~1-2KB/入 2-5KB（1h 内复用零 HTTP）；OSS POST=密文 blob——baseline≈gzip(≤1MiB/文件的工作树+.git 整树+extraManifest)≈源树 0.3–0.5×，increment 常 <1–10MB（delta 只认 path+sizeBytes，等长改写甚至产生近空 tar）；form 附带 ~2-5KB。",
+  "per_session_day": "Cursor-A：假设 8h 会话+~30 agent 请求→60 影子 commit；SnapshotUploader 每 300s 醒一次（≤96 次/天，有 pending 才发）；典型增量 5–50MB/天，首日为工作树+dot-dirs 全量（常见 50–500MB，大 monorepo+ ~/.claude 历史可达 GB）；A2 每 codebase ≥300s 至多一包、有新提交才非空。ZCode（存活期 v3.x）：每 prompt/终态触发一次捕获，20–50 次/天 → 1 次 baseline（数十–数百 MB）+ 其余 increment（KB–10MB 级），pending 仅随下一次捕获 flush（落后一拍）；日总量典型 30–300MB，credential 只在缓存 miss 时各 ~3KB。",
+  "assumptions": "未抓包，全部按代码路径推：Cursor packfile≈git 对象 zlib（源码类文本压缩 ~3×）；每 codebase 每 300s 至多一次批传（Zpe interval+nextRunAt）；dot-dir allowlist 体积按 ~/.claude projects/history 常见量级估计；ZCode gzip≈0.3–0.5×源文本、.git 视 repo 史可达等价于又一个工作树；请求头/信封 ~1KB 级忽略。"
+ },
+ "diagram_nodes": [
+  "client:workbench m9o (composerEventService onDidSendRequest/onDidFinishStreamChat)",
+  "client:cmd cursor.codebaseTelemetry.triggerSnapshot{reason,requestId}",
+  "client:ext session-FSM gate(codebase_telemetry_v2 && privacyEnum==4)",
+  "client:file-watchers → pendingChanges (workspace + ~/.cursor|~/.claude|~/.codex|~/.agents)",
+  "client:rust CodebaseSnapshotClient/gix-snapshot → shadow repo @~/.config/Cursor/User/snapshots (refs/cursor/snapshots/*)",
+  "client:SnapshotUploader 300s → generatePackfile → /tmp packfile",
+  "client:shouldAdmit (fail-open) ─ wire: CheckCodebaseTelemetryPolicy{host,repository_path}",
+  "server:api2.cursor.sh/aiserver.v1.CodebaseProtectionService",
+  "client:ensureCodebaseRegistered ─ wire: RegisterCodebase{codebase_uuid,path:<abs>,kind,env}",
+  "server:api2.cursor.sh/aiserver.v1.CodebaseSnapshotService/RegisterCodebase",
+  "client:CreatePackfileUpload{pack_id,sha256,size} ⇄ server 签发 {upload_uuid,chunk_size_bytes}",
+  "client→server: UploadPackfileChunk ×N ≤64MiB (proto+gzip+Bearer) ⇒ server:packfile store",
+  "server:api2 CompletePackfileUpload",
+  "client:markRegistered(本地指针)+cleanupPackfile",
+  "client:rust GitHistorySession（旁路，_git_history flag）→ 同 3 端点 +x-cursor-codebase-snapshot-rate-limit",
+  "──── zcode 管线（v3.12.3）────",
+  "client:sendPrompt/commandV4/taskComplete/wiki/cron → captureBeforePrompt (intent queue 32/120s)",
+  "client:GET credential ─ wire→ server:zcode.z.ai/api/v1/snapshot/upload-credential?workspace_id=<sha12> (Bearer+X-*指纹; data:null=kill switch)",
+  "server:zcode.z.ai 签发 {snapshot_id,public_key,oss form,callback template,max_size}",
+  "client:scan git ls-files/walkFiles + filter + .git/** 整树 + extraManifest(global-configs/references)",
+  "client:tar(<sid>/{meta,files,extra-*})→gzip→AES-256-CTR+RSA-OAEP wrap→pending .enc @~/.zcode/v2/checkpoints/<h12>/pending/",
+  "client:OSS PostObject multipart ─ wire: 密文blob+bare归因明文+b64callback",
+  "server:aliyun OSS bucket (可见密文+归因+callback 描述)",
+  "server:OSS→zcode callbackUrl POST {encrypted_aes_key, checksum=sha256(明文), update_type, x:*}",
+  "server:zcode 用 RSA 私钥解 wrap→AES 解密→持明文工作区 tar（客户端无回执）"
+ ],
+ "secondary_channels": [
+  "cursor-B indexing v1 → repo42.cursor.sh/aiserver.v1.RepositoryService/{FastRepoInitHandshakeV2,SyncMerkleSubtreeV2,FastUpdateFileV2,FastRepoSyncComplete,EnsureIndexCreated}：逐文件明文全文+unencrypted_relative_workspace_path 明文（加密路径形同虚设）；门 enum4+!codebase_telemetry_v1_deprecation（deobf 129845-129898 syncFile、130638-130727 gates、Vme 上限 50并发/1e5 文件/10MiB）",
+  "cursor-C debugging-zip → S3 presigned PUT：heapsnapshot+24h logs+整个 userData/User（含 state.vscdb token、History 副本）+agent-transcripts≤7d/512MiB(仅手动)→cursor-user-debugging-data.s3*.amazonaws.com；OOM 经 CDP 自动触发无对话框，远端 gate oom_crash_watcher；privacyMode→GetDebuggingDataUploadUrl 返空（out/main.js bytes 1498492 flag/1884279 bucket 校验/1900189 captureAndSendDebuggingData/~1919000 OOM 链）",
+  "cursor-D FileSync/Tab → geoCpp aiserver.v1.FileSyncService/{FSUploadFile,FSSyncFile,FSGetFileContents,FSGetMultiFileContents}：~250ms 逐键 SingleUpdateRequest{replaced_string:<键入文本>}+全量文件正文，服务端可回吐全部近期文件；isFileSyncEnabled 无 privacyMode 检查（always-local dist/main.js byte 2692011 proto、4435674 gate、~4463787 触发、~1056562 路由、x-fs-client-key 头）",
+  "cursor-E OnlineMetrics ReportAgentSnapshot → api2：agent 触及文件 fs_path+git root/branch/commit+行级 diff added_lines(+send_original_file_contents 时编辑前原文)，按服务端 timeIntervalsTrackedMinutes/numCommitsTracked 复拍；门仅 onlineMetricsConfig.enabled 无 privacy（deobf 114583-114867 proto、132096-132615 tracker；workbench $6o ~29176xxx）",
+  "cursor-F agent.v1 对话外发 → api2：Run 流 KvServerMessage.get_blob_args 服务端按 blob_id 拉任意对话 blob（fileStates=全文件内容/rootPromptMessages/todos/plan）、BlobUploadService 分块 UploadConversationBlobs(100id/批)、NotifyConversationClone、IngestConversation 全文转录（team flag cursor_blame，无 privacy 门）、UploadLocalAgentRunToPromptQuality 每次模型调用 messages/response 字节流、GetSignedUrlForAttachedMedia presigned（workbench bytes ~14461185/24107700/24147357/18214792/16446250）",
+  "cursor-G CodebaseProtection ReportWorkspaceRepositories → api2：每 30min 上报工作区全部 git remote 的 host+repository_path 心跳——独立于遥测门（deobf 137325-137399 proto、137618-137760 reporter、RAe=1800000@137621）",
+  "cursor-H MetricsService ReportIncrement → api3.cursor.sh：硬编码共享 Bearer 写 token rHggiuZiWj…（全安装同一枚）metricsList{name,value,tags{channel,platform,…}}，privacyMode 不拦仅 private-inference 锁（out/main.js byte ~1893400）",
+  "cursor-misc：OTLP traces → cursorCreds.backendUrl/v1/traces（native CodebaseSnapshotClient otlpConfig，deobf 137301-137316）；appendCppTelem→aiserver.v1.AiService/cppAppend+cppTelem 会话事件（这条反而查 getPrivacyMode，always-local ~4419xxx/~4435600）；SubmitLogs→api2 AnalyticsService；IdeEditorsStateFile{absolute_path,current_line_text} 随 agent run 上送",
+  "zcode-feedback（独立管线，v3.14.0 后仍存活）：POST /api/v1/feedback/attachment/upload-credential → OSS PostObject（----zcode-feedback- 边界）用户主动反馈附件，与快照 uploader 同形不同线（refs/ZCode/packages/services/src/feedback/feedbackHttpClient.ts:280,513,944,1064-1069）",
+  "zcode-ARMS RUM → proj-xtrace-*.cn-beijing.log.aliyuncs.com：perf_network_* 指标暴露 credential GET 的 host+path/成败/时延（query 被剥）；settings.indexing 开关拨动发 ui_action span——装饰开关的使用也被遥测",
+  "zcode repo-wiki LLM 生成 → 用户自配 provider baseURL（/chat/completions|/responses|/v1/messages）：非厂商外发，但证明\"索引/wiki\"叙事与上传解耦；v3.14.0 与快照管线同版移除"
+ ]
+}

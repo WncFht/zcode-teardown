@@ -24,3 +24,24 @@ __pycache__/
 /CLAUDE.md
 /.claude/
 /.crossnote/
+
+# ── sweep 报告构建中间产物与实验稿 ──
+notes/sweep/report/*.aux
+notes/sweep/report/*.log
+notes/sweep/report/*.out
+notes/sweep/report/*.toc
+notes/sweep/report/main.txt
+notes/sweep/de-ai-test/
+
+# ── tools/sweep/pcln Go 工具编译产物（源码在库，二进制不随）──
+tools/sweep/pcln/findfn
+tools/sweep/pcln/funcat
+tools/sweep/pcln/funclist
+tools/sweep/pcln/funcraw
+tools/sweep/pcln/functab
+tools/sweep/pcln/line2pc
+tools/sweep/pcln/pc2line
+tools/sweep/pcln/pcat
+tools/sweep/pcln/rstr
+tools/sweep/pcln/xref2
+tools/sweep/pcln/xrefs

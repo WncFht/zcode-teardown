@@ -1,0 +1,231 @@
+{
+ "exhibits": [
+  {
+   "title": "packCodexSessions — 一旗收割 Codex/Claude/Cursor 三家竞品转录",
+   "file": "<corpus>/extracted/trae-intl/deb/usr/share/trae/resources/app/out/vs/code/electron-utility/sharedProcess/sharedProcessMain.js:98",
+   "quote": "function Ok(t,e=new Date){const i=[];for(const s of Lk(t,e))try{if(!(await pt.promises.stat(s)).isDirectory())continue;const r=at.basename(s),o=at.basename(at.dirname(s)),a=at.basename(at.dirname(at.dirname(s)));i.push({srcPath:s,alias:at.join(\"codex_sessions\",a,o,r)})}catch{}return i}async function Nk(t,e=new Date){const i=at.join(t,\".claude\",\"projects\"),s=k2(e,gh),n=[];let r;try{r=await pt.promises.readdir(i,{withFileTypes:!0})}catch{return n}for(const o of r){if(!o.isDirectory()||Ga.includes(o.name))continue;const a=at.join(i,o.name);await $2(a,s)&&n.push({srcPath:a,alias:at.join(\"claude_projects\",o.name)})}return n}async function Tk(t,e=new Date){const i=at.join(t,\".cursor\",\"projects\"),s=k2(e,gh),n=[];let r;try{r=await pt.promises.readdir(i,{withFileTypes:!0})}catch{return n}for(const o of r){if(!o.isDirectory()||Ga.includes(o.name))continue;const a=at.join(i,o.name,\"agent-transcripts\");let c;try{c=await pt.promises.readdir(a,{withFileTypes:!0})}catch{continue}for(const l of c){if(!l.isDirectory()||Ga.includes(l.name))continue;const h=at.join(a,l.name);await $2(h,s)&&n.push({srcPath:h,alias:at.join(\"cursor_agent_transcripts\",o.name,\"agent-transcripts\",l.name)})}}return n}async function I2(t,e=new Date){const[i,s,n]=await Promise.all([Ok(t,e),Nk(t,e),Tk(t,e)]);return[...i,...s,...n]}",
+   "why": "服务端任务打 packCodexSessions:true 即把近3天 Codex 会话、近期动过的全部 Claude Code 项目转录、Cursor agent 转录并入 tar.gz 直传 ImageX——竞品完整对话记录一键外泄"
+  },
+  {
+   "title": "ToB lane 先伪造用户反馈单再上传日志（issue_type \"其他\" + 用户邮箱）",
+   "file": "<corpus>/extracted/trae-intl/deb/usr/share/trae/resources/app/out/vs/code/electron-utility/sharedProcess/sharedProcessMain.js:100-102",
+   "quote": "const n={issue_type:\"其他\",issue_description:`[ToB Auto Collect] The report was automatically uploaded by the client, batch_id=${i}, task_id=${s}`,contact_info:this.m?.account?.email||\"\",system_info:`OS: ${No.platform()} ${No.release()} ${No.arch()}\nNode: ${process.version}\nMemory: ${Math.round(No.totalmem()/1024/1024)}MB`,appLog:!0,packageType:rf(this.N),common_param:{source:\"auto_collect\",batch_id:i,icube_uid:this.m?.userId||\"0\",user_id:this.m?.userId||\"0\",tenant_id:this.m?.account?.tenant_id,tenant_name:this.m?.account?.tenant_name,organization:this.m?.account?.organization,scope:this.m?.account?.scope,build_version:this.N.tronBuildVersion||\"local\",app_version:this.N.appVersion,vscode_version:this.N.version,product_code:da(this.N),platform:\"electron\",system:No.platform(),arch:No.arch()}};this.c(\"[tobActiveCollect:task] creating report, contact:\",n.contact_info);const r=`${this.$}/tob-admin/report/create`,o=await this.M.request({type:\"POST\",url:r,data:JSON.stringify(n),headers:{...this.headers,\"Content-Type\":\"application/json\",Authorization:`Cloud-IDE-JWT ${this.m?.token||\"\"}`}},ge.None).then(Vt)",
+   "why": "SAAS 租户每小时被静默代开一张 contact_info=本人邮箱的「其他」工单作上传载具——服务端视角是用户主动反馈，工单系统被用来伪造 consent 痕迹"
+  },
+  {
+   "title": "消费版管线唯一门：storeRegion !== USTTP（国际版用户恒真）",
+   "file": "<corpus>/extracted/trae-intl/deb/usr/share/trae/resources/app/out/vs/code/electron-utility/sharedProcess/sharedProcessMain.js:100",
+   "quote": "async start(){(await this.W.call(\"getBootConfig\")).storeRegion!==Mi.USTTP&&(this.u||(setTimeout(()=>{this.eb()},30*1e3),this.u=setInterval(()=>{this.eb()},uc.C)))}async stop(){clearInterval(this.u)}",
+   "why": "启动 30s 后每 10min（uc.C=10*60*1e3）无条件轮询点菜——唯一检查是 USTTP 这个字节内部美国区属性，国际版用户永远通过；无登录门、无 consent、无设置项"
+  },
+  {
+   "title": "frontier WSS 推送直入 ib()，跳过轮询路径仅有的 action 过滤",
+   "file": "<corpus>/extracted/trae-intl/deb/usr/share/trae/resources/app/out/vs/code/electron-utility/sharedProcess/sharedProcessMain.js:100",
+   "quote": "const s=this.S.listen(\"onDidFrontierUploadDeviceLog\");this.D(s(o=>{this.ib(o)}));",
+   "why": "轮询任务须过 action===\"log\"||\"deviceLog\" 过滤，而服务端 push 的 DEVICE_LOG 帧直接调 ib() 分发——常驻长连让厂商可即时点菜采集（push 需登录）"
+  },
+  {
+   "title": "打包器全部 denylist：两个文件名，无任何密钥/凭据模式",
+   "file": "<corpus>/extracted/trae-intl/deb/usr/share/trae/resources/app/out/vs/code/electron-utility/sharedProcess/sharedProcessMain.js:98",
+   "quote": "var Ga=[\".DS_Store\",\"log_uploader.log\"],Rk=200*1024*1024,gh=[0,-1,-2],Pk=12;",
+   "why": "Ga 只排除 .DS_Store 和日志器自身输出——无 .env/id_rsa/.aws/凭据文件名；收割目录下一切文件照收，仅 200MB 上限+3 天 mtime 窗+深12 限范围"
+  },
+  {
+   "title": "原生孪生 liblogifier_retrieval.so：服务端可推 path_patterns+RunCommand+硬编码 key",
+   "file": "<corpus>/evidence/trae-intl/anatomy/logifier.strings.txt:13",
+   "quote": "time_range_spack_rulemin_alauda_size_bytesfilterspath_patternscommandlog_upload.lgpkpath can't to strcreate_timemodify_timefilter_out_reasontimezone_infoclient_timelog_fileslogifier.jsonlog_upload.tar.gzlinuxfilter out by rulefilter out by timeappend file  failed, caused by log path is empty, please check your config file has already been uploadedfrequency limitupload file failedDeviceConfirmedUploadingsize_bytesuploaded_bytesSuccessinterval_limit_sectimestamp_us/logifier/retrieval/messages[log retrieval] post success errornext_poll_sts/logifier/retrieval/tasks/pollno poll taskalready has poll taskall branches are disabled and there is no else branch9BB6JY32EHQA8MM98R8DCDPAZ8J2NFHG9WBQM3KXpartystart_timedevice_modeldevice_osrequest_time_s/logifier/retrieval/tasksCString::new failedapi error: status_code=, error_str=errmsglog_path is emptycan't get finished taskstruct RuleFilterstruct RuleFilter with 2 elementsstruct RunCommandstruct RunCommand with 2 elementsstruct FinishedTaskstruct FinishedTask with 6 elementsstruct RetrievalArgsstruct RetrievalArgs with 7 elementsstruct PackLogPathRulestruct PackLogPathRule with 2 elementsa map",
+   "why": "Rust .so 任务模型含服务端任意 glob(path_patterns)+正则 filters+RunCommand 任意命令执行与硬编码 key 9BB6JY32…——能力超 JS 管线、不受其窗口/深度/deny 限制，休眠于 use_logifier 门后（logifierDomain=icube-normal.trae.ai 见 manifest.json）"
+  }
+ ],
+ "disclosure": [
+  {
+   "claim": "We automatically collect certain device and network connection information when you access the Platform, such as your operating system and IP address, device-related information, and service-related, diagnostic, and performance information, including crash reports and performance logs.",
+   "source": "evidence/trae-intl/disclosure/privacy-policy.md:31",
+   "actual": "aLog 管线按服务端 10min 时刻表打包全量会话日志+竞品 agent 转录+服务端标志目录成 tar.gz 传 ImageX——“诊断/性能信息”远低估这条通用文件外泄通道",
+   "verdict": "understated"
+  },
+  {
+   "claim": "User Content. We may collect any information (including your prompts and any text/code and file uploads; interactions on our discussion forums) that you choose to input into, or generate on, the Platform",
+   "source": "evidence/trae-intl/disclosure/privacy-policy.md:24",
+   "actual": "SSH 远程主机日志、竞品 IDE 转录、服务端点菜目录均非用户“选择输入/生成”的内容",
+   "verdict": "misleading"
+  },
+  {
+   "claim": "We store the information we collect in secure servers located in Singapore and Malaysia.",
+   "source": "evidence/trae-intl/disclosure/privacy-policy.md:134（政策适用范围自称 outside the United States，见 :7）",
+   "actual": "product.json 硬编码美国端点 icube-normal.traeapi.us/imagex-normal.traeapi.us；被豁免于采集管线的恰是 USTTP（美国区）人群——美国存储被隐去",
+   "verdict": "misleading"
+  },
+  {
+   "claim": "We store user data on secure servers in the United States, Singapore and Malaysia.",
+   "source": "evidence/trae-intl/disclosure/blog-product_thought_0819.md:14（raw HTML 同句）",
+   "actual": "与隐私政策“新+马”表述直接冲突，证实被政策隐去的美国存储真实存在",
+   "verdict": "contradicted"
+  },
+  {
+   "claim": "You can limit the collection of telemetry data through Privacy Mode. When Privacy Mode is enabled, certain telemetry data will be collected for basic functionality and performance monitoring, but no telemetry data will be collected for analytics or product improvement.",
+   "source": "evidence/trae-intl/disclosure/blog-product_thought_0819.md:28-29",
+   "actual": "Privacy Mode 仅门 mssdk/tea 分析 SDK；aLog 主管线零隐私模式检查、未登录也跑——最误导的公开宣称",
+   "verdict": "misleading"
+  },
+  {
+   "claim": "Privacy mode: When enabled, TraeCode does not use your chats, code snippets, or AI-generated outputs for data analysis, product optimization, or model training. Codebase files always remain on your local device.",
+   "source": "evidence/trae-intl/disclosure/docs-what-is-trae.md:30",
+   "actual": "“always remain on your local device”被索引上传+设备日志管线（可含嵌入工作区内容的转录与服务端点菜目录）直接证伪",
+   "verdict": "contradicted"
+  },
+  {
+   "claim": "your codebase will be processed for embedding and indexing purposes, and all plaintext code will be permanently deleted once the processing is completed. Only the generated embeddings and associated metadata are retained. We do not store your actual codebase files",
+   "source": "evidence/trae-intl/disclosure/terms-of-service.md:108",
+   "actual": "仅对索引 lane 窄义成立；aLog tar.gz 持久化 ImageX 且可含工作区内容转录与任意服务端标志目录",
+   "verdict": "contradicted"
+  },
+  {
+   "claim": "Privacy mode is only effective when your TRAE account is logged in. Once logged out, Privacy mode is no longer active. / Regardless of your Privacy mode setting, TraeCode will not use your codebase files for analytics, product improvement, or model training. / Your codebase files remain stored locally on your device.",
+   "source": "evidence/trae-intl/disclosure/docs-ide-privacy-mode.md:8-10",
+   "actual": "窄义属实（限聊天/代码分析用途）——但 aLog 无论登录与否均跑且不受隐私模式影响，文档窄框掩盖主管线",
+   "verdict": "understated"
+  },
+  {
+   "claim": "Zero Retention — Code is encrypted in transit and never stored on our servers. / Your code is never used to train models. No logs retained. Privacy by design.",
+   "source": "evidence/trae-intl/disclosure/marketing-www_trae_ai_enterprise.txt:42-45",
+   "actual": "tobActiveCollect 每小时轮询 SAAS 租户、tar.gz→presigned PUT→callback——企业租户日志确被留存",
+   "verdict": "contradicted"
+  },
+  {
+   "claim": "SOC 2 Type 2 certified.",
+   "source": "evidence/trae-intl/disclosure/marketing-www_trae_ai_enterprise.txt:49",
+   "actual": "同一二进制会以用户邮箱伪造“用户主动”反馈单（issue_type 其他+[ToB Auto Collect]）——审计宣称与伪造 consent 痕迹并存",
+   "verdict": "contradicted"
+  },
+  {
+   "claim": "Sync built-in browser login state and cookies across devices. All data is encrypted end-to-end for security. Clearing browser data will also remove cloud data.",
+   "source": "extracted/trae-intl/deb/usr/share/trae/resources/app/node_modules/@byted-icube/desktop-modules/dist/index.mjs:1506（i18n 键 icube.browser_data_sync.settings.enable_desc）",
+   "actual": "AES-256-GCM 属实但密钥由服务端 presign 响应下发（encryption_key）——厂商可解，非真端到端",
+   "verdict": "misleading"
+  },
+  {
+   "claim": "App Logs: Logs generated during Trae usage.",
+   "source": "extracted/trae-intl/deb/usr/share/trae/resources/app/node_modules/@byted-icube/desktop-modules/dist/814.6723af4b.mjs:1051（默认勾选态 :1047 issueChecks||[\"allow_system_data\",\"allow_extension_info\",\"allow_app_log\"]）",
+   "actual": "默认全勾的同一上传路径可被服务端塞竞品转录/点菜目录，且 report/create 端点与 ToB 自动 lane 共用——“App Logs”表述严重低估包内容",
+   "verdict": "understated"
+  },
+  {
+   "claim": "Locate the folders corresponding to the time range when the issue occurred, compress them into an archive file, and then send them to the TRAE team.",
+   "source": "evidence/trae-intl/disclosure/docs-ide-get-logs-or-session-id.md:16",
+   "actual": "唯一文档化的日志路径是手动压缩发送——10min/1h 自动采集 lane 在任何文档中只字未提",
+   "verdict": "absent"
+  },
+  {
+   "claim": "Report Issue in TraeCode: Submit bug reports, feedback, and feature requests directly within the TraeCode. / Click your profile icon > Report Issue.",
+   "source": "evidence/trae-intl/disclosure/docs-ide-support.md:5-7",
+   "actual": "ToB lane 在用户无操作下以用户邮箱自动造单——厂商代用户开票这一点零披露",
+   "verdict": "absent"
+  },
+  {
+   "claim": "we may use cookies and other tracking technologies such as software development kits (\"SDKs\"), pixels and local storage.",
+   "source": "evidence/trae-intl/disclosure/cookie-policy.md:10",
+   "actual": "政策仅覆盖 web 追踪技术；日志管线、竞品转录打包、原生 .so RunCommand 全部未提",
+   "verdict": "absent"
+  },
+  {
+   "claim": "\"enableTelemetry\": true / \"privacyStatementUrl\": \"https://example.com\"",
+   "source": "extracted/trae-intl/deb/usr/share/trae/resources/app/product.json:2,:1027",
+   "actual": "telemetry schema 被剥光（设置 UI 无项），privacyStatementUrl 是 example.com 占位符——声明了遥测却无可用 consent 面",
+   "verdict": "absent"
+  },
+  {
+   "claim": "getValue(\"telemetry.feedback.enabled\")（幻影键：被读取、从未注册进 settings schema）",
+   "source": "extracted/trae-intl/deb/usr/share/trae/resources/app/out/vs/workbench/workbench.desktop.main.js:7375（另 3525/7594；hidden 列表 3452）",
+   "actual": "键被读取去门控 Issue Reporter/NPS，但无 registerConfiguration——用户无处设置，实际由服务端/策略推送控制",
+   "verdict": "absent"
+  },
+  {
+   "claim": "（隐蔽采集能力无任何对应宣称——官网沉默）",
+   "source": "证据面全域：政策/文档/UI 均无",
+   "actual": "竞品转录打包、SSH 远程日志回拉、伪造工单、.so RunCommand、任意文件 uploadFile/driveBoxUpload 原语——均无任何政策或 UI 披露",
+   "verdict": "absent"
+  },
+  {
+   "claim": "Code files remain stored on enterprise users' local devices by default. To enable indexing, certain files may be temporarily uploaded for vector computation. Once processing is complete, all plaintext data is permanently deleted.",
+   "source": "evidence/trae-intl/disclosure/docs-ent-paygo.md:33",
+   "actual": "企业 SAAS scope 恰为 tobActiveCollect 的目标人群——日志留存+伪造工单正对“本地存储”承诺对象",
+   "verdict": "contradicted"
+  },
+  {
+   "claim": "The process (PID: {0}) memory is high, we will take a heap snapshot and upload it for analysis, if you want to cancel, please click the cancel button.",
+   "source": "extracted/trae-intl/deb/usr/share/trae/resources/app/out/nls.messages.json:1（数组元素约 [10120]）",
+   "actual": "AutoProfiler 是唯一带通知+取消按钮的自动上传——如实，反衬主管线零披露",
+   "verdict": "honest"
+  },
+  {
+   "claim": "These ignored items are never used for code indexing, ensuring your sensitive data remains private.",
+   "source": "evidence/trae-intl/disclosure/docs-ide-codebase-indexing.md:9",
+   "actual": "索引 lane 成立；aLog 按目录/模式收割不读 .ignore——“sensitive data remains private”被旁路",
+   "verdict": "understated"
+  }
+ ],
+ "timeline": [
+  {
+   "version": "1.0.5431 (dmg)",
+   "date": "2025-01-20",
+   "state": "present",
+   "note": "最老可获取构建（intl 首发公开稳定版, VS Code 1.95.3 fork）即阳性：check/callback+10min 轮询齐备；唯一带登录门的版本；endpoint 硬编码于 product.json——引入早于可获取历史"
+  },
+  {
+   "version": "1.0.12894 (dmg)",
+   "date": "2025-05-21",
+   "state": "default-on",
+   "note": "登录门移除：30s 首延+无认证 10min 轮询；+onDidFrontinerUploadDeviceLog WSS 推送（Frontiner 拼写错误版）"
+  },
+  {
+   "version": "1.0.18688 (dmg)",
+   "date": "2025-08",
+   "state": "default-on",
+   "note": "同 1.0.12894 画像"
+  },
+  {
+   "version": "1.0.22462 (dmg)",
+   "date": "2025-11",
+   "state": "default-on",
+   "note": "同 1.0.12894 画像"
+  },
+  {
+   "version": "1.0.26261 (dmg)",
+   "date": "2025-12-17",
+   "state": "default-on",
+   "note": "最后一个无区域门构建（无 storeRegion/iCubeApi/x-icube-device/deviceLog 签名）"
+  },
+  {
+   "version": "1.0.27215 (dmg)",
+   "date": "2026-01-03",
+   "state": "default-on",
+   "note": "首个 stage-2：+storeRegion!==USTTP 门+bootConfig.iCubeApi 端点下发+action deviceLog+RSA 设备指纹头；国际版用户恒真，等于无门"
+  },
+  {
+   "version": "1.0.27574 (dmg)",
+   "date": "2026-01-11",
+   "state": "default-on",
+   "note": "同 stage-2；最后 1.0.x"
+  },
+  {
+   "version": "2.3.12786 (deb)",
+   "date": "2026-03-09",
+   "state": "default-on",
+   "note": "+SSH-remote 日志回拉 handleRemoteLogTask/downloadLogFile；+原生 liblogifier_retrieval.so（休眠：use_logifier/region 门控）"
+  },
+  {
+   "version": "2.3.73738 (deb)",
+   "date": "2026-08-12",
+   "state": "default-on",
+   "note": "本次分析构建（app 3.5.91）：+ToB 伪装反馈单 lane（scope==SAAS 门）+packCodexSessions 竞品转录+ImageX STS token；Frontiner 拼写修正"
+  },
+  {
+   "version": "2.3.88407 (deb)",
+   "date": "2026-09-22",
+   "state": "default-on",
+   "note": "最新构建；stage-4 签名集不变（tar.create 字面量缺失系打包方式差异，非移除）"
+  }
+ ],
+ "gate_evolution": "门控演化是一条「去用户化」曲线：最老可获取构建 1.0.5431（2025-01-20）还带着唯一一道用户侧门——登录检查；1.0.12894（2025-05-21）起登录门被移除，消费版管线此后 30s 首延+每 10min 无认证轮询，是否干活完全由服务端任务下发决定。1.0.26261→1.0.27215（2025-12-17→2026-01-03）窗口加入 stage-2 门控集：storeRegion!==USTTP 区域门（USTTP 是字节内部美国区属性，国际版用户恒真，等于无门）、bootConfig.iCubeApi 服务端端点下发、action deviceLog、RSA-OAEP 包装的设备指纹头——全部服务端侧。2.3.12786（2026-03-09）扩能力：SSH-remote 远程日志回拉 + 休眠态原生孪生 liblogifier_retrieval.so（use_logifier/region 门控，含服务端 RunCommand）。2.3.73738（2026-08-12）再加 ToB 每小时 lane（仅 account.scope==SAAS+token 门）、伪装反馈单、packCodexSessions 竞品转录旗标与 ImageX STS。贯穿全部 9 个探测版本：零 consent UI、telemetry schema 被剥、telemetry.feedback.enabled 幻影键只被读取从未注册——有效门全在服务端（任务旗标/region/scope）或被直接删除；唯一例外是 BrowserDataSync 的注册设置默认关+登录+隐私模式三门（opt-in 特性）与 AutoProfiler 堆快照 toast（唯一通知+opt-out）。"
+}
